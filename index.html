@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forex Lot Size Calculator | Position Size Calculator</title>
+    <meta name="description" content="Professional forex position size calculator. Calculate lot sizes for forex pairs, gold, silver, indices, and crypto. Built for prop firm traders.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Ambient background glow -->
+    <div class="bg-glow"></div>
+
+    <div class="app">
+
+        <!-- ====== HEADER ====== -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                            <rect x="2" y="8" width="3" height="14" rx="1.5" fill="url(#barGrad)"/>
+                            <rect x="7" y="4" width="3" height="18" rx="1.5" fill="url(#barGrad)"/>
+                            <rect x="12" y="10" width="3" height="12" rx="1.5" fill="url(#barGrad)"/>
+                            <rect x="17" y="2" width="3" height="20" rx="1.5" fill="url(#barGrad)"/>
+                            <rect x="22" y="6" width="3" height="16" rx="1.5" fill="url(#barGrad)"/>
+                            <defs>
+                                <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="28">
+                                    <stop offset="0%" stop-color="#10b981"/>
+                                    <stop offset="100%" stop-color="#06b6d4"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1>LOT SIZE <span class="gradient-text">CALCULATOR</span></h1>
+                        <p class="header-sub">Calculate the perfect position size for every trade</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ====== MAIN CALCULATOR ====== -->
+        <main class="calculator">
+            <div class="calculator-grid">
+
+                <!-- ========== INPUT PANEL ========== -->
+                <div class="panel input-panel">
+                    <div class="panel-header">
+                        <span class="panel-icon">⚙️</span>
+                        <h2>Trade Setup</h2>
+                    </div>
+                    <div class="panel-body">
+
+                        <!-- Instrument Selector -->
+                        <div class="input-group">
+                            <label for="instrument">Instrument</label>
+                            <div class="select-wrapper">
+                                <select id="instrument">
+                                    <optgroup label="📈 Forex — Major">
+                                        <option value="EURUSD" selected>EUR/USD</option>
+                                        <option value="GBPUSD">GBP/USD</option>
+                                        <option value="USDJPY">USD/JPY</option>
+                                        <option value="USDCHF">USD/CHF</option>
+                                        <option value="AUDUSD">AUD/USD</option>
+                                        <option value="NZDUSD">NZD/USD</option>
+                                    </optgroup>
+                                    <optgroup label="🔀 Forex — Cross">
+                                        <option value="CHFJPY">CHF/JPY</option>
+                                        <option value="CADJPY">CAD/JPY</option>
+                                        <option value="AUDJPY">AUD/JPY</option>
+                                        <option value="GBPCAD">GBP/CAD</option>
+                                        <option value="EURCAD">EUR/CAD</option>
+                                    </optgroup>
+                                    <optgroup label="🥇 Commodities">
+                                        <option value="XAUUSD">XAU/USD (Gold)</option>
+                                        <option value="XAGUSD">XAG/USD (Silver)</option>
+                                    </optgroup>
+                                    <optgroup label="📊 Indices">
+                                        <option value="US30">US30 (Dow Jones)</option>
+                                        <option value="US500">US500 (S&amp;P 500)</option>
+                                        <option value="US100">US100 (Nasdaq 100)</option>
+                                        <option value="GER30">GER30 (DAX)</option>
+                                        <option value="JP225">JP225 (Nikkei 225)</option>
+                                    </optgroup>
+                                    <optgroup label="₿ Crypto">
+                                        <option value="BTCUSD">BTC/USD (Bitcoin)</option>
+                                        <option value="ETHUSD">ETH/USD (Ethereum)</option>
+                                    </optgroup>
+                                </select>
+                                <div class="select-arrow">
+                                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                                        <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="instrument-badge" id="instrumentBadge">
+                                <span class="badge-dot"></span>
+                                <span id="badgeText">Forex</span>
+                            </div>
+                        </div>
+
+                        <!-- Account Balance -->
+                        <div class="input-group">
+                            <label for="balance">Account Balance</label>
+                            <div class="input-addon">
+                                <span class="addon-prefix">$</span>
+                                <input type="number" id="balance" placeholder="10000" value="10000" min="0" step="100">
+                            </div>
+                        </div>
+
+                        <!-- Risk Input -->
+                        <div class="input-group">
+                            <label>Risk</label>
+                            <div class="toggle-group">
+                                <button class="toggle-btn active" id="riskPercentBtn" data-mode="percent">Percentage</button>
+                                <button class="toggle-btn" id="riskDollarBtn" data-mode="dollar">Fixed $</button>
+                                <div class="toggle-slider" id="riskSlider"></div>
+                            </div>
+                            <div id="riskPercentGroup">
+                                <div class="input-addon">
+                                    <input type="number" id="riskPercent" placeholder="1" value="1" min="0.01" max="100" step="0.1">
+                                    <span class="addon-suffix">%</span>
+                                </div>
+                                <div class="risk-preview">
+                                    Risk: <strong id="riskPreview">$100.00</strong>
+                                </div>
+                            </div>
+                            <div id="riskDollarGroup" class="hidden">
+                                <div class="input-addon">
+                                    <span class="addon-prefix">$</span>
+                                    <input type="number" id="riskDollar" placeholder="100" value="100" min="0" step="1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stop Loss Input -->
+                        <div class="input-group">
+                            <label>Stop Loss</label>
+                            <div class="toggle-group">
+                                <button class="toggle-btn" id="slPriceBtn" data-mode="price">Price Levels</button>
+                                <button class="toggle-btn" id="slPipsBtn" data-mode="pips">
+                                    <span id="slPipsLabel">Pips</span>
+                                </button>
+                                <div class="toggle-slider" id="slSlider"></div>
+                            </div>
+
+                            <!-- Price Levels Mode -->
+                            <div id="slPriceGroup">
+                                <div class="price-inputs">
+                                    <div class="input-addon">
+                                        <span class="addon-prefix-label">Entry</span>
+                                        <input type="number" id="entryPrice" placeholder="1.13710" step="any">
+                                    </div>
+                                    <div class="input-addon">
+                                        <span class="addon-prefix-label sl-label">SL</span>
+                                        <input type="number" id="slPrice" placeholder="1.13210" step="any">
+                                    </div>
+                                    <div class="input-addon">
+                                        <span class="addon-prefix-label tp-label">TP</span>
+                                        <input type="number" id="tpPrice" placeholder="1.14210" step="any">
+                                    </div>
+                                </div>
+                                <!-- Trade direction badge -->
+                                <div class="trade-direction hidden" id="tradeDirection">
+                                    <span class="direction-badge" id="directionBadge">BUY</span>
+                                    <span class="direction-pips" id="directionPips">0 pips</span>
+                                </div>
+                            </div>
+
+                            <!-- Pips Mode -->
+                            <div id="slPipsGroup" class="hidden">
+                                <div class="price-inputs">
+                                    <div class="input-addon">
+                                        <input type="number" id="slPips" placeholder="50" min="0.1" step="0.1">
+                                        <span class="addon-suffix" id="slPipsSuffix">pips</span>
+                                    </div>
+                                    <div class="input-addon">
+                                        <input type="number" id="tpPips" placeholder="100" min="0.1" step="0.1">
+                                        <span class="addon-suffix" id="tpPipsSuffix">pips TP</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Conversion Rate (conditional) -->
+                        <div class="input-group conversion-group hidden" id="conversionGroup">
+                            <label id="conversionLabel">USD/JPY Rate</label>
+                            <div class="input-addon">
+                                <input type="number" id="conversionRate" placeholder="163.73" step="any">
+                            </div>
+                            <span class="helper-text" id="conversionHelper">Needed to convert pip value to USD</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== RESULTS PANEL ========== -->
+                <div class="panel results-panel">
+                    <div class="panel-header">
+                        <span class="panel-icon">📐</span>
+                        <h2>Position Size</h2>
+                    </div>
+                    <div class="panel-body">
+
+                        <!-- Main Lot Size Display -->
+                        <div class="lot-display" id="lotDisplay">
+                            <div class="lot-glow"></div>
+                            <div class="lot-value-wrapper">
+                                <span class="lot-value" id="lotSize">—</span>
+                                <span class="lot-unit">LOTS</span>
+                            </div>
+                            <button class="copy-btn" id="copyBtn" title="Copy lot size">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                                    <path d="M3 11V3C3 2.44772 3.44772 2 4 2H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                                <span class="copy-tooltip" id="copyTooltip">Copied!</span>
+                            </button>
+                        </div>
+
+                        <!-- Result Details -->
+                        <div class="result-grid">
+                            <div class="result-card">
+                                <span class="result-label">Risk Amount</span>
+                                <span class="result-value risk-value" id="riskAmountResult">$0.00</span>
+                            </div>
+                            <div class="result-card">
+                                <span class="result-label">Expected Reward</span>
+                                <span class="result-value reward-value" id="rewardResult">—</span>
+                            </div>
+                            <div class="result-card">
+                                <span class="result-label">Risk : Reward</span>
+                                <span class="result-value rr-value" id="rrResult">—</span>
+                            </div>
+                            <div class="result-card">
+                                <span class="result-label" id="pipValueLabel">Pip Value / Lot</span>
+                                <span class="result-value" id="pipValueResult">$0.00</span>
+                            </div>
+                            <div class="result-card">
+                                <span class="result-label">Stop Loss</span>
+                                <span class="result-value" id="slResult">— pips</span>
+                            </div>
+                            <div class="result-card">
+                                <span class="result-label">Position Value</span>
+                                <span class="result-value" id="positionValue">$0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Lot Breakdown -->
+                        <div class="lot-breakdown">
+                            <div class="breakdown-title">Lot Breakdown</div>
+                            <div class="breakdown-row">
+                                <span class="breakdown-label">Standard Lots (1.0)</span>
+                                <span class="breakdown-value" id="standardLots">0</span>
+                            </div>
+                            <div class="breakdown-row">
+                                <span class="breakdown-label">Mini Lots (0.10)</span>
+                                <span class="breakdown-value" id="miniLots">0</span>
+                            </div>
+                            <div class="breakdown-row">
+                                <span class="breakdown-label">Micro Lots (0.01)</span>
+                                <span class="breakdown-value" id="microLots">0</span>
+                            </div>
+                        </div>
+
+                        <!-- Formula Breakdown -->
+                        <div class="formula-section" id="formulaSection">
+                            <div class="formula-title">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2"/>
+                                    <path d="M7 4V4.5M7 6.5V10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                </svg>
+                                Calculation
+                            </div>
+                            <pre class="formula-text" id="formulaText">Select an instrument and enter your trade details to see the calculation.</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== INSTRUMENT INFO BAR ====== -->
+            <div class="info-bar">
+                <div class="info-item">
+                    <span class="info-label">Instrument</span>
+                    <span class="info-value" id="infoInstrument">EUR/USD</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Category</span>
+                    <span class="info-value" id="infoCategory">Forex</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label" id="infoPipLabel">Pip Size</span>
+                    <span class="info-value" id="infoPipSize">0.0001</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Contract Size</span>
+                    <span class="info-value" id="infoContract">100,000</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Quote Currency</span>
+                    <span class="info-value" id="infoQuote">USD</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- ====== FOOTER ====== -->
+        <footer class="footer">
+            <p>Built for prop firm traders &bull; Standard MT5 contract specifications</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
