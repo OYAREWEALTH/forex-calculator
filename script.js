@@ -2,51 +2,46 @@
    FOREX LOT SIZE CALCULATOR — ENGINE
    Supports: Forex, Commodities, Indices, Crypto
    Account currency: USD
+   Includes: Prop Firm Margin & MT5 Execution Checker
    ============================================ */
 
 // ========================================
 // INSTRUMENT DATABASE
 // ========================================
-// Calculation formula (universal):
-//   pip_value_quote = pipSize × contractSize   (value of 1 pip per lot in quote currency)
-//   pip_value_usd   = pip_value_quote / conversionRate   (if conversionOp === 'divide')
-//                   = pip_value_quote × conversionRate   (if conversionOp === 'multiply')
-//   lot_size        = risk_amount / (sl_pips × pip_value_usd)
-//
-// For "Price Levels" mode:  sl_pips = |entryPrice − slPrice| / pipSize
-
 const INSTRUMENTS = {
     // ── Forex Majors (quote = USD → no conversion) ──────────────
     'EURUSD': {
         label: 'EUR/USD', category: 'Forex',
         pipSize: 0.0001, contractSize: 100_000, quoteCcy: 'USD',
-        decimals: 5
+        baseCcy: 'EUR', defaultLeverage: 100, decimals: 5
     },
     'GBPUSD': {
         label: 'GBP/USD', category: 'Forex',
         pipSize: 0.0001, contractSize: 100_000, quoteCcy: 'USD',
-        decimals: 5
+        baseCcy: 'GBP', defaultLeverage: 100, decimals: 5
     },
     'AUDUSD': {
         label: 'AUD/USD', category: 'Forex',
         pipSize: 0.0001, contractSize: 100_000, quoteCcy: 'USD',
-        decimals: 5
+        baseCcy: 'AUD', defaultLeverage: 100, decimals: 5
     },
     'NZDUSD': {
         label: 'NZD/USD', category: 'Forex',
         pipSize: 0.0001, contractSize: 100_000, quoteCcy: 'USD',
-        decimals: 5
+        baseCcy: 'NZD', defaultLeverage: 100, decimals: 5
     },
 
     // ── Forex Majors (self-converting: entry price IS the conversion rate) ──
     'USDJPY': {
         label: 'USD/JPY', category: 'Forex',
         pipSize: 0.01, contractSize: 100_000, quoteCcy: 'JPY',
+        baseCcy: 'USD', defaultLeverage: 100,
         selfConvert: true, conversionOp: 'divide', decimals: 3
     },
     'USDCHF': {
         label: 'USD/CHF', category: 'Forex',
         pipSize: 0.0001, contractSize: 100_000, quoteCcy: 'CHF',
+        baseCcy: 'USD', defaultLeverage: 100,
         selfConvert: true, conversionOp: 'divide', decimals: 5
     },
 
@@ -54,16 +49,19 @@ const INSTRUMENTS = {
     'CHFJPY': {
         label: 'CHF/JPY', category: 'Forex',
         pipSize: 0.01, contractSize: 100_000, quoteCcy: 'JPY',
+        baseCcy: 'CHF', defaultLeverage: 100,
         conversionPair: 'USD/JPY', conversionOp: 'divide', decimals: 3
     },
     'CADJPY': {
         label: 'CAD/JPY', category: 'Forex',
         pipSize: 0.01, contractSize: 100_000, quoteCcy: 'JPY',
+        baseCcy: 'CAD', defaultLeverage: 100,
         conversionPair: 'USD/JPY', conversionOp: 'divide', decimals: 3
     },
     'AUDJPY': {
         label: 'AUD/JPY', category: 'Forex',
         pipSize: 0.01, contractSize: 100_000, quoteCcy: 'JPY',
+        baseCcy: 'AUD', defaultLeverage: 100,
         conversionPair: 'USD/JPY', conversionOp: 'divide', decimals: 3
     },
 
@@ -71,11 +69,13 @@ const INSTRUMENTS = {
     'GBPCAD': {
         label: 'GBP/CAD', category: 'Forex',
         pipSize: 0.0001, contractSize: 100_000, quoteCcy: 'CAD',
+        baseCcy: 'GBP', defaultLeverage: 100,
         conversionPair: 'USD/CAD', conversionOp: 'divide', decimals: 5
     },
     'EURCAD': {
         label: 'EUR/CAD', category: 'Forex',
         pipSize: 0.0001, contractSize: 100_000, quoteCcy: 'CAD',
+        baseCcy: 'EUR', defaultLeverage: 100,
         conversionPair: 'USD/CAD', conversionOp: 'divide', decimals: 5
     },
 
@@ -83,42 +83,40 @@ const INSTRUMENTS = {
     'XAUUSD': {
         label: 'XAU/USD (Gold)', category: 'Commodities',
         pipSize: 0.01, contractSize: 100, quoteCcy: 'USD',
-        unit: 'oz', decimals: 2
+        unit: 'oz', defaultLeverage: 30, decimals: 2
     },
     'XAGUSD': {
         label: 'XAG/USD (Silver)', category: 'Commodities',
         pipSize: 0.001, contractSize: 5_000, quoteCcy: 'USD',
-        unit: 'oz', decimals: 3
+        unit: 'oz', defaultLeverage: 30, decimals: 3
     },
 
     // ── Indices ─────────────────────────────────────────────────
-    // Contract sizes based on standard MT5 prop firm specs.
-    // US indices: $1 per 1.0 index point per lot.
     'US30': {
         label: 'US30 (Dow Jones)', category: 'Indices',
         pipSize: 1, contractSize: 1, quoteCcy: 'USD',
-        unit: 'contracts', pipLabel: 'points', decimals: 2
+        unit: 'contracts', pipLabel: 'points', defaultLeverage: 20, decimals: 2
     },
     'US500': {
         label: 'US500 (S&P 500)', category: 'Indices',
         pipSize: 1, contractSize: 1, quoteCcy: 'USD',
-        unit: 'contracts', pipLabel: 'points', decimals: 2
+        unit: 'contracts', pipLabel: 'points', defaultLeverage: 20, decimals: 2
     },
     'US100': {
         label: 'US100 (Nasdaq 100)', category: 'Indices',
         pipSize: 1, contractSize: 1, quoteCcy: 'USD',
-        unit: 'contracts', pipLabel: 'points', decimals: 2
+        unit: 'contracts', pipLabel: 'points', defaultLeverage: 20, decimals: 2
     },
     'GER30': {
         label: 'GER30 (DAX)', category: 'Indices',
         pipSize: 1, contractSize: 1, quoteCcy: 'EUR',
-        unit: 'contracts', pipLabel: 'points', decimals: 2,
+        unit: 'contracts', pipLabel: 'points', defaultLeverage: 20, decimals: 2,
         conversionPair: 'EUR/USD', conversionOp: 'multiply'
     },
     'JP225': {
         label: 'JP225 (Nikkei 225)', category: 'Indices',
         pipSize: 1, contractSize: 100, quoteCcy: 'JPY',
-        unit: 'contracts', pipLabel: 'points', decimals: 0,
+        unit: 'contracts', pipLabel: 'points', defaultLeverage: 20, decimals: 0,
         conversionPair: 'USD/JPY', conversionOp: 'divide'
     },
 
@@ -126,15 +124,14 @@ const INSTRUMENTS = {
     'BTCUSD': {
         label: 'BTC/USD (Bitcoin)', category: 'Crypto',
         pipSize: 0.01, contractSize: 1, quoteCcy: 'USD',
-        unit: 'BTC', decimals: 2
+        unit: 'BTC', defaultLeverage: 2, decimals: 2
     },
     'ETHUSD': {
         label: 'ETH/USD (Ethereum)', category: 'Crypto',
         pipSize: 0.01, contractSize: 1, quoteCcy: 'USD',
-        unit: 'ETH', decimals: 2
+        unit: 'ETH', defaultLeverage: 2, decimals: 2
     },
 };
-
 
 // ========================================
 // DOM REFERENCES
@@ -142,61 +139,81 @@ const INSTRUMENTS = {
 const $ = (id) => document.getElementById(id);
 
 const DOM = {
-    instrument:      $('instrument'),
-    balance:         $('balance'),
-    riskPercent:     $('riskPercent'),
-    riskDollar:      $('riskDollar'),
-    riskPercentBtn:  $('riskPercentBtn'),
-    riskDollarBtn:   $('riskDollarBtn'),
-    riskPercentGroup:$('riskPercentGroup'),
-    riskDollarGroup: $('riskDollarGroup'),
-    riskSlider:      $('riskSlider'),
-    riskPreview:     $('riskPreview'),
-    slPriceBtn:      $('slPriceBtn'),
-    slPipsBtn:       $('slPipsBtn'),
-    slPriceGroup:    $('slPriceGroup'),
-    slPipsGroup:     $('slPipsGroup'),
-    slSlider:        $('slSlider'),
-    slPips:          $('slPips'),
-    slPipsLabel:     $('slPipsLabel'),
-    slPipsSuffix:    $('slPipsSuffix'),
-    entryPrice:      $('entryPrice'),
-    slPrice:         $('slPrice'),
-    tpPrice:         $('tpPrice'),
-    tpPips:          $('tpPips'),
-    tpPipsSuffix:    $('tpPipsSuffix'),
-    tradeDirection:  $('tradeDirection'),
-    directionBadge:  $('directionBadge'),
-    directionPips:   $('directionPips'),
-    conversionGroup: $('conversionGroup'),
-    conversionLabel: $('conversionLabel'),
-    conversionRate:  $('conversionRate'),
-    conversionHelper:$('conversionHelper'),
-    lotDisplay:      $('lotDisplay'),
-    lotSize:         $('lotSize'),
-    copyBtn:         $('copyBtn'),
-    copyTooltip:     $('copyTooltip'),
-    riskAmountResult:$('riskAmountResult'),
-    rewardResult:    $('rewardResult'),
-    rrResult:        $('rrResult'),
-    pipValueLabel:   $('pipValueLabel'),
-    pipValueResult:  $('pipValueResult'),
-    slResult:        $('slResult'),
-    positionValue:   $('positionValue'),
-    standardLots:    $('standardLots'),
-    miniLots:        $('miniLots'),
-    microLots:       $('microLots'),
-    formulaText:     $('formulaText'),
-    instrumentBadge: $('instrumentBadge'),
-    badgeText:       $('badgeText'),
-    infoInstrument:  $('infoInstrument'),
-    infoCategory:    $('infoCategory'),
-    infoPipLabel:    $('infoPipLabel'),
-    infoPipSize:     $('infoPipSize'),
-    infoContract:    $('infoContract'),
-    infoQuote:       $('infoQuote'),
+    instrument:          $('instrument'),
+    balance:             $('balance'),
+    leverage:            $('leverage'),
+    customLeverage:      $('customLeverage'),
+    customLeverageGroup: $('customLeverageGroup'),
+    leverageAutoBadge:   $('leverageAutoBadge'),
+    riskPercent:         $('riskPercent'),
+    riskDollar:          $('riskDollar'),
+    riskPercentBtn:      $('riskPercentBtn'),
+    riskDollarBtn:       $('riskDollarBtn'),
+    riskPercentGroup:    $('riskPercentGroup'),
+    riskDollarGroup:     $('riskDollarGroup'),
+    riskSlider:          $('riskSlider'),
+    riskPreview:         $('riskPreview'),
+    slPriceBtn:          $('slPriceBtn'),
+    slPipsBtn:           $('slPipsBtn'),
+    slPriceGroup:        $('slPriceGroup'),
+    slPipsGroup:         $('slPipsGroup'),
+    slSlider:            $('slSlider'),
+    slPips:              $('slPips'),
+    tpPips:              $('tpPips'),
+    slPipsLabel:         $('slPipsLabel'),
+    slPipsSuffix:        $('slPipsSuffix'),
+    tpPipsSuffix:        $('tpPipsSuffix'),
+    entryPrice:          $('entryPrice'),
+    slPrice:             $('slPrice'),
+    tpPrice:             $('tpPrice'),
+    pipsModePrice:       $('pipsModePrice'),
+    tradeDirection:      $('tradeDirection'),
+    directionBadge:      $('directionBadge'),
+    directionPips:       $('directionPips'),
+    conversionGroup:     $('conversionGroup'),
+    conversionLabel:     $('conversionLabel'),
+    conversionRate:      $('conversionRate'),
+    conversionHelper:    $('conversionHelper'),
+    executionCard:       $('executionCard'),
+    executionIconWrapper:$('executionIconWrapper'),
+    executionIcon:       $('executionIcon'),
+    executionTag:        $('executionTag'),
+    executionTitle:      $('executionTitle'),
+    executionDesc:       $('executionDesc'),
+    marginProgressBar:   $('marginProgressBar'),
+    marginBarLeft:       $('marginBarLeft'),
+    marginBarRight:      $('marginBarRight'),
+    executionAction:     $('executionAction'),
+    btnFixMargin:        $('btnFixMargin'),
+    btnFixRiskText:      $('btnFixRiskText'),
+    lotDisplay:          $('lotDisplay'),
+    lotSize:             $('lotSize'),
+    copyBtn:             $('copyBtn'),
+    copyTooltip:         $('copyTooltip'),
+    riskAmountResult:    $('riskAmountResult'),
+    rewardResult:        $('rewardResult'),
+    rrResult:            $('rrResult'),
+    pipValueLabel:       $('pipValueLabel'),
+    pipValueResult:      $('pipValueResult'),
+    slResult:            $('slResult'),
+    positionValue:       $('positionValue'),
+    marginResult:        $('marginResult'),
+    marginUsageResult:   $('marginUsageResult'),
+    maxSafeLotsResult:   $('maxSafeLotsResult'),
+    standardLots:        $('standardLots'),
+    miniLots:            $('miniLots'),
+    microLots:           $('microLots'),
+    formulaText:         $('formulaText'),
+    instrumentBadge:     $('instrumentBadge'),
+    badgeText:           $('badgeText'),
+    infoInstrument:      $('infoInstrument'),
+    infoCategory:        $('infoCategory'),
+    infoPipLabel:        $('infoPipLabel'),
+    infoPipSize:         $('infoPipSize'),
+    infoContract:        $('infoContract'),
+    infoQuote:           $('infoQuote'),
+    infoLeverage:        $('infoLeverage'),
 };
-
 
 // ========================================
 // APPLICATION STATE
@@ -204,8 +221,10 @@ const DOM = {
 let state = {
     riskMode: 'percent',   // 'percent' | 'dollar'
     slMode: 'price',       // 'price' | 'pips'
+    maxSafeRiskPct: null,
+    maxSafeRiskUSD: null,
+    maxSafeLots: null
 };
-
 
 // ========================================
 // UTILITY FUNCTIONS
@@ -231,9 +250,8 @@ function formatContractSize(size) {
     return size.toLocaleString('en-US');
 }
 
-
 // ========================================
-// INSTRUMENT INFO HELPERS
+// INSTRUMENT & LEVERAGE HELPERS
 // ========================================
 function getInstrument() {
     return INSTRUMENTS[DOM.instrument.value];
@@ -243,12 +261,18 @@ function getInstrumentKey() {
     return DOM.instrument.value;
 }
 
+function getActiveLeverage() {
+    const val = DOM.leverage.value;
+    if (val === 'custom') {
+        const customVal = parseFloat(DOM.customLeverage.value);
+        return (customVal && customVal > 0) ? customVal : 100;
+    }
+    return parseFloat(val) || 100;
+}
+
 function needsConversionField(inst) {
-    // If quote currency is USD, no conversion needed
     if (inst.quoteCcy === 'USD') return false;
-    // If self-converting AND in price mode, entry price IS the conversion rate
     if (inst.selfConvert && state.slMode === 'price') return false;
-    // All other non-USD quote currencies need a conversion rate
     return true;
 }
 
@@ -261,25 +285,67 @@ function getConversionLabel(inst) {
 
 function getConversionHelper(inst) {
     if (inst.selfConvert) {
-        return `Enter the current ${inst.label} price to convert pip value to USD`;
+        return `Enter current ${inst.label} price to convert pip value to USD`;
     }
-    return `Enter the current ${inst.conversionPair} rate to convert ${inst.quoteCcy} pip value to USD`;
+    return `Enter current ${inst.conversionPair} rate to convert ${inst.quoteCcy} to USD`;
 }
 
 function getPipLabel(inst) {
     return inst.pipLabel || 'pips';
 }
 
+// Calculate Position Notional Value in USD for 1 lot
+function getNotionalValuePerLotUSD(inst, priceVal, conversionRate) {
+    const price = (priceVal && priceVal > 0) ? priceVal : 1;
+
+    if (inst.category === 'Forex') {
+        if (inst.baseCcy === 'USD') {
+            // USD base (USDJPY, USDCHF): 1 lot = 100,000 USD
+            return inst.contractSize;
+        } else if (inst.quoteCcy === 'USD') {
+            // EURUSD, GBPUSD, AUDUSD, NZDUSD: 1 lot = 100,000 Base * Price USD
+            return inst.contractSize * price;
+        } else {
+            // Cross pairs: (CHFJPY, CADJPY, AUDJPY, GBPCAD, EURCAD)
+            if (inst.conversionPair === 'USD/JPY') {
+                const usdjpy = (conversionRate && conversionRate > 0) ? conversionRate : 160;
+                return (inst.contractSize * price) / usdjpy;
+            } else if (inst.conversionPair === 'USD/CAD') {
+                const usdcad = (conversionRate && conversionRate > 0) ? conversionRate : 1.38;
+                return (inst.contractSize * price) / usdcad;
+            }
+            return inst.contractSize * price;
+        }
+    } else if (inst.category === 'Commodities') {
+        // Gold / Silver: contractSize * price USD
+        return inst.contractSize * price;
+    } else if (inst.category === 'Indices') {
+        if (inst.quoteCcy === 'USD') {
+            return inst.contractSize * price;
+        } else if (inst.quoteCcy === 'EUR') {
+            const eurusd = (conversionRate && conversionRate > 0) ? conversionRate : 1.137;
+            return inst.contractSize * price * eurusd;
+        } else if (inst.quoteCcy === 'JPY') {
+            const usdjpy = (conversionRate && conversionRate > 0) ? conversionRate : 160;
+            return (inst.contractSize * price) / usdjpy;
+        }
+        return inst.contractSize * price;
+    } else if (inst.category === 'Crypto') {
+        // BTC, ETH: 1 unit * price USD
+        return inst.contractSize * price;
+    }
+
+    return inst.contractSize * price;
+}
 
 // ========================================
 // CALCULATION ENGINE
 // ========================================
 function calculate() {
     const inst = getInstrument();
-    const key = getInstrumentKey();
+    const balance = parseFloat(DOM.balance.value);
 
     // 1. Get risk amount
-    const balance = parseFloat(DOM.balance.value);
     let riskAmount;
     if (state.riskMode === 'percent') {
         const riskPct = parseFloat(DOM.riskPercent.value);
@@ -288,12 +354,12 @@ function calculate() {
         riskAmount = parseFloat(DOM.riskDollar.value);
     }
 
-    if (!riskAmount || riskAmount <= 0 || isNaN(riskAmount)) {
+    if (!riskAmount || riskAmount <= 0 || isNaN(riskAmount) || !balance || balance <= 0 || isNaN(balance)) {
         clearResults();
         return;
     }
 
-    // 2. Get SL in pips
+    // 2. Get SL in pips & determine entry price
     let slPips;
     let entryPriceVal = null;
 
@@ -310,6 +376,10 @@ function calculate() {
         updateTradeDirection(entryPriceVal, slPriceVal, inst);
     } else {
         slPips = parseFloat(DOM.slPips.value);
+        // In pips mode, get estimated price from input or placeholder
+        const pipsPriceInput = parseFloat(DOM.pipsModePrice.value);
+        const phPrice = parseFloat(DOM.pipsModePrice.placeholder) || parseFloat(DOM.entryPrice.placeholder) || 1;
+        entryPriceVal = (pipsPriceInput && pipsPriceInput > 0) ? pipsPriceInput : phPrice;
         DOM.tradeDirection.classList.add('hidden');
     }
 
@@ -319,17 +389,15 @@ function calculate() {
     }
 
     // 3. Get conversion rate
-    let conversionRate = 1; // Default for USD quote
+    let conversionRate = 1;
     let conversionRateVal = null;
 
     if (inst.quoteCcy !== 'USD') {
         if (inst.selfConvert && state.slMode === 'price' && entryPriceVal) {
-            // Use entry price as conversion rate
             conversionRate = entryPriceVal;
             conversionRateVal = entryPriceVal;
         } else if (inst.selfConvert && state.slMode === 'pips') {
-            // Need explicit conversion rate input
-            conversionRate = parseFloat(DOM.conversionRate.value);
+            conversionRate = parseFloat(DOM.conversionRate.value) || entryPriceVal || 1;
             conversionRateVal = conversionRate;
         } else if (inst.conversionPair) {
             conversionRate = parseFloat(DOM.conversionRate.value);
@@ -354,7 +422,7 @@ function calculate() {
         pipValueUSD = pipValueQuote * conversionRate;
     }
 
-    // 5. Calculate lot size
+    // 5. Calculate Desired Lot Size
     const riskPerLot = slPips * pipValueUSD;
     const lotSize = riskAmount / riskPerLot;
 
@@ -380,28 +448,53 @@ function calculate() {
         }
     }
 
-    // 7. Calculate position value (approximate)
-    let posValue = 0;
-    if (state.slMode === 'price' && entryPriceVal) {
-        if (inst.quoteCcy === 'USD') {
-            posValue = lotSize * inst.contractSize * entryPriceVal;
-        } else if (inst.conversionOp === 'divide') {
-            posValue = (lotSize * inst.contractSize * entryPriceVal) / conversionRate;
-        } else {
-            posValue = lotSize * inst.contractSize * entryPriceVal * conversionRate;
-        }
-    }
+    // 7. Calculate Position Value & Required Margin (MT5 Check)
+    const leverage = getActiveLeverage();
+    const notionalPerLotUSD = getNotionalValuePerLotUSD(inst, entryPriceVal, conversionRate);
+    const totalPositionValueUSD = lotSize * notionalPerLotUSD;
+    const requiredMargin = totalPositionValueUSD / leverage;
+    const marginUsagePct = (requiredMargin / balance) * 100;
+    const freeMarginAfterTrade = balance - requiredMargin;
 
-    // 8. Update UI
-    updateResults(lotSize, riskAmount, pipValueUSD, slPips, posValue, inst, conversionRateVal, rewardAmount, rrRatio, tpPips);
-    updateFormula(lotSize, riskAmount, pipValueUSD, slPips, inst, conversionRateVal, rewardAmount, rrRatio, tpPips);
+    // 8. Calculate Maximum Executable Lot & Risk based on Margin
+    const marginPerLot = notionalPerLotUSD / leverage;
+    const maxSafeLots = marginPerLot > 0 ? (balance / marginPerLot) : 0;
+    const maxSafeRiskUSD = maxSafeLots * slPips * pipValueUSD;
+    const maxSafeRiskPct = (maxSafeRiskUSD / balance) * 100;
+
+    state.maxSafeRiskPct = maxSafeRiskPct;
+    state.maxSafeRiskUSD = maxSafeRiskUSD;
+    state.maxSafeLots = maxSafeLots;
+
+    // 9. Update UI & Execution Status
+    updateResults({
+        lotSize, riskAmount, pipValueUSD, slPips, totalPositionValueUSD,
+        requiredMargin, marginUsagePct, freeMarginAfterTrade,
+        maxSafeLots, maxSafeRiskPct, maxSafeRiskUSD,
+        rewardAmount, rrRatio, tpPips,
+        inst, conversionRateVal, leverage, balance
+    });
+
+    updateFormula({
+        lotSize, riskAmount, pipValueUSD, slPips, totalPositionValueUSD,
+        requiredMargin, marginUsagePct, maxSafeLots, maxSafeRiskPct,
+        rewardAmount, rrRatio, tpPips,
+        inst, conversionRateVal, leverage, balance
+    });
 }
-
 
 // ========================================
 // UI UPDATE FUNCTIONS
 // ========================================
-function updateResults(lotSize, riskAmount, pipValueUSD, slPips, posValue, inst, conversionRate, rewardAmount, rrRatio, tpPips) {
+function updateResults(data) {
+    const {
+        lotSize, riskAmount, pipValueUSD, slPips, totalPositionValueUSD,
+        requiredMargin, marginUsagePct, freeMarginAfterTrade,
+        maxSafeLots, maxSafeRiskPct, maxSafeRiskUSD,
+        rewardAmount, rrRatio, tpPips,
+        inst, conversionRateVal, leverage, balance
+    } = data;
+
     const pipLabel = getPipLabel(inst);
     const prevValue = DOM.lotSize.textContent;
     const newValue = lotSize.toFixed(2);
@@ -409,10 +502,10 @@ function updateResults(lotSize, riskAmount, pipValueUSD, slPips, posValue, inst,
     DOM.lotSize.textContent = newValue;
     DOM.lotDisplay.classList.add('calculated');
 
-    // Pop animation if value changed
+    // Pop animation on change
     if (prevValue !== newValue) {
         DOM.lotSize.classList.remove('pop');
-        void DOM.lotSize.offsetWidth; // Force reflow
+        void DOM.lotSize.offsetWidth;
         DOM.lotSize.classList.add('pop');
     }
 
@@ -420,7 +513,7 @@ function updateResults(lotSize, riskAmount, pipValueUSD, slPips, posValue, inst,
     DOM.pipValueLabel.textContent = `${pipLabel.charAt(0).toUpperCase() + pipLabel.slice(1)} Value / Lot`;
     DOM.pipValueResult.textContent = formatUSD(pipValueUSD);
     DOM.slResult.textContent = `${formatNumber(slPips, slPips % 1 === 0 ? 0 : 1)} ${pipLabel}`;
-    DOM.positionValue.textContent = posValue > 0 ? formatUSD(posValue) : '—';
+    DOM.positionValue.textContent = totalPositionValueUSD > 0 ? formatUSD(totalPositionValueUSD) : '—';
 
     // Reward & R:R
     if (rewardAmount !== null && rrRatio !== null) {
@@ -431,7 +524,31 @@ function updateResults(lotSize, riskAmount, pipValueUSD, slPips, posValue, inst,
         DOM.rrResult.textContent = '—';
     }
 
-    // Lot breakdown
+    // Margin Metrics in Grid
+    DOM.marginResult.textContent = formatUSD(requiredMargin);
+    DOM.marginUsageResult.textContent = `${marginUsagePct.toFixed(1)}%`;
+    DOM.maxSafeLotsResult.textContent = `${maxSafeLots.toFixed(2)} lots`;
+
+    // Margin metric text colors
+    if (requiredMargin > balance) {
+        DOM.marginResult.className = 'result-value margin-danger';
+        DOM.marginUsageResult.className = 'result-value margin-danger';
+    } else if (marginUsagePct >= 70) {
+        DOM.marginResult.className = 'result-value margin-warning';
+        DOM.marginUsageResult.className = 'result-value margin-warning';
+    } else {
+        DOM.marginResult.className = 'result-value margin-safe';
+        DOM.marginUsageResult.className = 'result-value margin-safe';
+    }
+
+    // Execution Status Banner Logic
+    updateExecutionBanner({
+        requiredMargin, balance, marginUsagePct,
+        freeMarginAfterTrade, maxSafeLots, maxSafeRiskPct,
+        maxSafeRiskUSD, leverage, lotSize
+    });
+
+    // Lot Breakdown
     const std = Math.floor(lotSize);
     const remainAfterStd = lotSize - std;
     const mini = Math.floor(remainAfterStd * 10);
@@ -440,13 +557,70 @@ function updateResults(lotSize, riskAmount, pipValueUSD, slPips, posValue, inst,
 
     DOM.standardLots.textContent = std;
     DOM.miniLots.textContent = mini;
-    DOM.microLots.textContent = micro;
+    DOM.microLots.textContent = mini < 0 ? 0 : micro;
 }
 
-function updateFormula(lotSize, riskAmount, pipValueUSD, slPips, inst, conversionRate, rewardAmount, rrRatio, tpPips) {
+function updateExecutionBanner(data) {
+    const {
+        requiredMargin, balance, marginUsagePct,
+        freeMarginAfterTrade, maxSafeLots, maxSafeRiskPct,
+        maxSafeRiskUSD, leverage, lotSize
+    } = data;
+
+    const card = DOM.executionCard;
+    const clampedProgress = Math.min(Math.max(marginUsagePct, 0), 100);
+    DOM.marginProgressBar.style.width = `${clampedProgress}%`;
+    DOM.marginBarLeft.textContent = `Req. Margin: ${formatUSD(requiredMargin)}`;
+    DOM.marginBarRight.textContent = `Usage: ${marginUsagePct.toFixed(1)}% of $${formatNumber(balance, 2)}`;
+
+    card.classList.remove('status-safe', 'status-warning', 'status-rejected');
+
+    if (requiredMargin > balance) {
+        // 🔴 REJECTED: Not Enough Money in MT5
+        card.classList.add('status-rejected');
+        DOM.executionIcon.textContent = '❌';
+        DOM.executionTag.textContent = 'MT5 WILL REJECT TRADE';
+        DOM.executionTitle.textContent = 'Insufficient Margin ("No Money")';
+        DOM.executionDesc.textContent = `Trade requires ${formatUSD(requiredMargin)} in margin at 1:${leverage} leverage, but your free balance is only ${formatUSD(balance)} (${marginUsagePct.toFixed(0)}% margin usage).`;
+
+        // Show 1-Click Fix Button
+        DOM.executionAction.classList.remove('hidden');
+        if (state.riskMode === 'percent') {
+            DOM.btnFixRiskText.textContent = `${maxSafeRiskPct.toFixed(2)}% risk (${maxSafeLots.toFixed(2)} lots)`;
+        } else {
+            DOM.btnFixRiskText.textContent = `${formatUSD(maxSafeRiskUSD)} risk (${maxSafeLots.toFixed(2)} lots)`;
+        }
+    } else if (marginUsagePct >= 70) {
+        // 🟡 WARNING: High Margin Usage (70%-100%)
+        card.classList.add('status-warning');
+        DOM.executionIcon.textContent = '⚠️';
+        DOM.executionTag.textContent = 'HIGH MARGIN USAGE';
+        DOM.executionTitle.textContent = 'Order Will Execute, Low Free Margin';
+        DOM.executionDesc.textContent = `Required margin is ${formatUSD(requiredMargin)} (${marginUsagePct.toFixed(1)}% of account). Free margin remaining: ${formatUSD(freeMarginAfterTrade)}.`;
+        DOM.executionAction.classList.add('hidden');
+    } else {
+        // 🟢 SAFE: Order Will Execute Cleanly
+        card.classList.add('status-safe');
+        DOM.executionIcon.textContent = '✅';
+        DOM.executionTag.textContent = 'ORDER WILL EXECUTE';
+        DOM.executionTitle.textContent = 'Sufficient Margin Available';
+        DOM.executionDesc.textContent = `Required margin is ${formatUSD(requiredMargin)} (${marginUsagePct.toFixed(1)}% of balance). Free margin remaining: ${formatUSD(freeMarginAfterTrade)}.`;
+        DOM.executionAction.classList.add('hidden');
+    }
+}
+
+function updateFormula(data) {
+    const {
+        lotSize, riskAmount, pipValueUSD, slPips, totalPositionValueUSD,
+        requiredMargin, marginUsagePct, maxSafeLots, maxSafeRiskPct,
+        rewardAmount, rrRatio, tpPips,
+        inst, conversionRateVal, leverage, balance
+    } = data;
+
     const pipLabel = getPipLabel(inst);
     let lines = [];
 
+    lines.push(`── 1. LOT SIZE SIZING ──`);
     lines.push(`Lot Size = Risk ÷ (SL × Pip Value/Lot)`);
     lines.push(``);
 
@@ -457,11 +631,11 @@ function updateFormula(lotSize, riskAmount, pipValueUSD, slPips, inst, conversio
     } else {
         const ccySymbol = inst.quoteCcy;
         if (inst.conversionOp === 'divide') {
-            lines.push(`Pip Value = (${inst.pipSize} × ${formatContractSize(inst.contractSize)}) ÷ ${conversionRate}`);
-            lines.push(`         = ${ccySymbol} ${formatNumber(pipValueQuote, 2)} ÷ ${conversionRate}`);
+            lines.push(`Pip Value = (${inst.pipSize} × ${formatContractSize(inst.contractSize)}) ÷ ${conversionRateVal}`);
+            lines.push(`         = ${ccySymbol} ${formatNumber(pipValueQuote, 2)} ÷ ${conversionRateVal}`);
         } else {
-            lines.push(`Pip Value = (${inst.pipSize} × ${formatContractSize(inst.contractSize)}) × ${conversionRate}`);
-            lines.push(`         = ${ccySymbol} ${formatNumber(pipValueQuote, 2)} × ${conversionRate}`);
+            lines.push(`Pip Value = (${inst.pipSize} × ${formatContractSize(inst.contractSize)}) × ${conversionRateVal}`);
+            lines.push(`         = ${ccySymbol} ${formatNumber(pipValueQuote, 2)} × ${conversionRateVal}`);
         }
         lines.push(`         = ${formatUSD(pipValueUSD)} per ${pipLabel === 'points' ? 'point' : 'pip'}`);
     }
@@ -471,10 +645,26 @@ function updateFormula(lotSize, riskAmount, pipValueUSD, slPips, inst, conversio
     lines.push(`         = ${formatUSD(riskAmount)} ÷ ${formatUSD(slPips * pipValueUSD)}`);
     lines.push(`         = ${lotSize.toFixed(2)} lots`);
 
-    // Reward section
+    // Margin & Execution Check Breakdown
+    lines.push(``);
+    lines.push(`── 2. MT5 MARGIN & EXECUTION CHECK ──`);
+    lines.push(`Notional Value  = ${lotSize.toFixed(2)} lots × Contract Specs = ${formatUSD(totalPositionValueUSD)}`);
+    lines.push(`Required Margin = ${formatUSD(totalPositionValueUSD)} ÷ ${leverage} (leverage) = ${formatUSD(requiredMargin)}`);
+    lines.push(`Account Balance = ${formatUSD(balance)}`);
+    lines.push(`Margin Usage    = (${formatUSD(requiredMargin)} ÷ ${formatUSD(balance)}) × 100 = ${marginUsagePct.toFixed(1)}%`);
+
+    if (requiredMargin > balance) {
+        lines.push(`Status          = ❌ REJECTED ("No Money")`);
+        lines.push(`Max Safe Lots   = (${formatUSD(balance)} × ${leverage}) ÷ Notional/Lot = ${maxSafeLots.toFixed(2)} lots`);
+        lines.push(`Max Safe Risk % = ${maxSafeRiskPct.toFixed(2)}%`);
+    } else {
+        lines.push(`Status          = ✅ EXECUTABLE (Free Margin: ${formatUSD(balance - requiredMargin)})`);
+    }
+
+    // Expected Reward Breakdown
     if (rewardAmount !== null && rrRatio !== null) {
         lines.push(``);
-        lines.push(`── Expected Reward ──`);
+        lines.push(`── 3. EXPECTED REWARD ──`);
         lines.push(`TP Distance  = ${formatNumber(tpPips, tpPips % 1 === 0 ? 0 : 1)} ${pipLabel}`);
         lines.push(`Reward       = ${formatNumber(tpPips, tpPips % 1 === 0 ? 0 : 1)} × ${formatUSD(pipValueUSD)} × ${lotSize.toFixed(2)}`);
         lines.push(`             = ${formatUSD(rewardAmount)}`);
@@ -493,9 +683,23 @@ function clearResults() {
     DOM.pipValueResult.textContent = '$0.00';
     DOM.slResult.textContent = '—';
     DOM.positionValue.textContent = '—';
+    DOM.marginResult.textContent = '$0.00';
+    DOM.marginUsageResult.textContent = '0%';
+    DOM.maxSafeLotsResult.textContent = '—';
     DOM.standardLots.textContent = '0';
     DOM.miniLots.textContent = '0';
     DOM.microLots.textContent = '0';
+
+    DOM.executionCard.className = 'execution-card status-safe';
+    DOM.executionIcon.textContent = '⏳';
+    DOM.executionTag.textContent = 'READY TO CALCULATE';
+    DOM.executionTitle.textContent = 'Enter Trade Parameters';
+    DOM.executionDesc.textContent = 'Fill in balance, risk, and price levels to check lot size and margin execution.';
+    DOM.marginProgressBar.style.width = '0%';
+    DOM.marginBarLeft.textContent = 'Req. Margin: $0.00';
+    DOM.marginBarRight.textContent = 'Usage: 0%';
+    DOM.executionAction.classList.add('hidden');
+
     DOM.formulaText.textContent = 'Enter your trade details to see the calculation.';
 }
 
@@ -510,12 +714,10 @@ function updateTradeDirection(entry, sl, inst) {
     const pips = Math.abs(entry - sl) / inst.pipSize;
 
     if (sl < entry) {
-        // SL below entry = BUY
         DOM.tradeDirection.classList.remove('sell');
         DOM.directionBadge.textContent = 'BUY ↑';
         DOM.directionBadge.style.background = '';
     } else {
-        // SL above entry = SELL
         DOM.tradeDirection.classList.add('sell');
         DOM.directionBadge.textContent = 'SELL ↓';
     }
@@ -539,8 +741,7 @@ function updateConversionField() {
         DOM.conversionLabel.textContent = getConversionLabel(inst);
         DOM.conversionHelper.textContent = getConversionHelper(inst);
 
-        // Set placeholder based on pair
-        if (inst.conversionPair === 'USD/JPY' || inst.selfConvert && inst.quoteCcy === 'JPY') {
+        if (inst.conversionPair === 'USD/JPY' || (inst.selfConvert && inst.quoteCcy === 'JPY')) {
             DOM.conversionRate.placeholder = '163.73';
         } else if (inst.conversionPair === 'USD/CAD') {
             DOM.conversionRate.placeholder = '1.3800';
@@ -559,6 +760,7 @@ function updateConversionField() {
 function updateInfoBar() {
     const inst = getInstrument();
     const pipLabel = getPipLabel(inst);
+    const leverage = getActiveLeverage();
 
     DOM.infoInstrument.textContent = inst.label;
     DOM.infoCategory.textContent = inst.category;
@@ -566,6 +768,7 @@ function updateInfoBar() {
     DOM.infoPipSize.textContent = inst.pipSize;
     DOM.infoContract.textContent = formatContractSize(inst.contractSize) + (inst.unit ? ` ${inst.unit}` : '');
     DOM.infoQuote.textContent = inst.quoteCcy;
+    DOM.infoLeverage.textContent = `1:${leverage}`;
 }
 
 function updateInstrumentBadge() {
@@ -587,7 +790,6 @@ function updatePlaceholders() {
     const inst = getInstrument();
     const key = getInstrumentKey();
 
-    // Set sensible placeholders based on instrument
     const placeholders = {
         'EURUSD':  { entry: '1.13710', sl: '1.13210', tp: '1.14210', pips: '50', tpPips: '50' },
         'GBPUSD':  { entry: '1.32990', sl: '1.32490', tp: '1.33490', pips: '50', tpPips: '50' },
@@ -617,8 +819,33 @@ function updatePlaceholders() {
     DOM.tpPrice.placeholder = ph.tp;
     DOM.slPips.placeholder = ph.pips;
     DOM.tpPips.placeholder = ph.tpPips;
+    DOM.pipsModePrice.placeholder = ph.entry;
 }
 
+function updateLeverageForInstrument() {
+    const inst = getInstrument();
+    const defaultLev = inst.defaultLeverage || 100;
+
+    // Check if the default leverage exists in the dropdown options
+    let found = false;
+    for (let opt of DOM.leverage.options) {
+        if (opt.value === String(defaultLev)) {
+            DOM.leverage.value = String(defaultLev);
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        DOM.leverage.value = 'custom';
+        DOM.customLeverageGroup.classList.remove('hidden');
+        DOM.customLeverage.value = defaultLev;
+    } else {
+        DOM.customLeverageGroup.classList.add('hidden');
+    }
+
+    DOM.leverageAutoBadge.textContent = `Auto: 1:${defaultLev}`;
+}
 
 // ========================================
 // EVENT HANDLERS
@@ -626,12 +853,29 @@ function updatePlaceholders() {
 
 // Instrument change
 DOM.instrument.addEventListener('change', () => {
+    updateLeverageForInstrument();
     updateConversionField();
     updateInfoBar();
     updateInstrumentBadge();
     updatePipLabels();
     updatePlaceholders();
     DOM.tradeDirection.classList.add('hidden');
+    calculate();
+});
+
+// Leverage change
+DOM.leverage.addEventListener('change', () => {
+    if (DOM.leverage.value === 'custom') {
+        DOM.customLeverageGroup.classList.remove('hidden');
+    } else {
+        DOM.customLeverageGroup.classList.add('hidden');
+    }
+    updateInfoBar();
+    calculate();
+});
+
+DOM.customLeverage.addEventListener('input', () => {
+    updateInfoBar();
     calculate();
 });
 
@@ -685,7 +929,7 @@ DOM.slPipsBtn.addEventListener('click', () => {
 const calcInputs = [
     DOM.balance, DOM.riskPercent, DOM.riskDollar,
     DOM.entryPrice, DOM.slPrice, DOM.tpPrice,
-    DOM.slPips, DOM.tpPips,
+    DOM.slPips, DOM.tpPips, DOM.pipsModePrice,
     DOM.conversionRate
 ];
 
@@ -698,6 +942,23 @@ calcInputs.forEach(input => {
     });
 });
 
+// ⚡ Auto-Fix Button (Adjust Risk to Max Safe Executable)
+DOM.btnFixMargin.addEventListener('click', () => {
+    if (state.maxSafeRiskPct === null || state.maxSafeRiskPct <= 0) return;
+
+    if (state.riskMode === 'percent') {
+        // Floor to 2 decimal places to guarantee execution
+        const safePct = Math.floor(state.maxSafeRiskPct * 100) / 100;
+        DOM.riskPercent.value = safePct > 0 ? safePct : 0.1;
+        updateRiskPreview();
+    } else {
+        const safeUSD = Math.floor(state.maxSafeRiskUSD * 100) / 100;
+        DOM.riskDollar.value = safeUSD > 0 ? safeUSD : 10;
+    }
+
+    calculate();
+});
+
 // Copy lot size to clipboard
 DOM.copyBtn.addEventListener('click', () => {
     const value = DOM.lotSize.textContent;
@@ -707,7 +968,6 @@ DOM.copyBtn.addEventListener('click', () => {
         DOM.copyTooltip.classList.add('show');
         setTimeout(() => DOM.copyTooltip.classList.remove('show'), 1500);
     }).catch(() => {
-        // Fallback: select text
         const range = document.createRange();
         range.selectNodeContents(DOM.lotSize);
         const sel = window.getSelection();
@@ -716,12 +976,10 @@ DOM.copyBtn.addEventListener('click', () => {
     });
 });
 
-
 // ========================================
 // INITIALIZATION
 // ========================================
 function init() {
-    // Set default SL mode to "Price Levels" (first button active)
     state.slMode = 'price';
     DOM.slPriceBtn.classList.add('active');
     DOM.slPipsBtn.classList.remove('active');
@@ -729,12 +987,11 @@ function init() {
     DOM.slPipsGroup.classList.add('hidden');
     DOM.slSlider.classList.remove('right');
 
-    // Set default risk mode
     state.riskMode = 'percent';
     DOM.riskPercentBtn.classList.add('active');
     DOM.riskSlider.classList.remove('right');
 
-    // Initialize UI
+    updateLeverageForInstrument();
     updateConversionField();
     updateInfoBar();
     updateInstrumentBadge();
@@ -744,5 +1001,4 @@ function init() {
     clearResults();
 }
 
-// Run on page load
 document.addEventListener('DOMContentLoaded', init);

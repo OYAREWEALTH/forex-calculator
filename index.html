@@ -106,10 +106,45 @@
 
                         <!-- Account Balance -->
                         <div class="input-group">
-                            <label for="balance">Account Balance</label>
+                            <div class="label-with-hint">
+                                <label for="balance">Account Balance / Equity</label>
+                                <span class="input-hint">Drawdown aware</span>
+                            </div>
                             <div class="input-addon">
                                 <span class="addon-prefix">$</span>
                                 <input type="number" id="balance" placeholder="10000" value="10000" min="0" step="100">
+                            </div>
+                        </div>
+
+                        <!-- Account Leverage -->
+                        <div class="input-group">
+                            <div class="label-with-hint">
+                                <label for="leverage">Account Leverage (Maven MT5)</label>
+                                <span class="auto-badge" id="leverageAutoBadge">Auto: 1:100</span>
+                            </div>
+                            <div class="select-wrapper">
+                                <select id="leverage">
+                                    <option value="100" selected>1:100 (Forex Standard)</option>
+                                    <option value="50">1:50</option>
+                                    <option value="30">1:30 (Metals / Gold Standard)</option>
+                                    <option value="20">1:20 (Indices Standard)</option>
+                                    <option value="10">1:10</option>
+                                    <option value="5">1:5 (Crypto Tier 2)</option>
+                                    <option value="2">1:2 (Maven Crypto Standard)</option>
+                                    <option value="1">1:1 (No Leverage / Cash)</option>
+                                    <option value="custom">Custom Leverage...</option>
+                                </select>
+                                <div class="select-arrow">
+                                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                                        <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div id="customLeverageGroup" class="hidden" style="margin-top: 8px;">
+                                <div class="input-addon">
+                                    <span class="addon-prefix">1 :</span>
+                                    <input type="number" id="customLeverage" placeholder="100" min="1" max="1000" step="1">
+                                </div>
                             </div>
                         </div>
 
@@ -183,6 +218,10 @@
                                         <input type="number" id="tpPips" placeholder="100" min="0.1" step="0.1">
                                         <span class="addon-suffix" id="tpPipsSuffix">pips TP</span>
                                     </div>
+                                    <div class="input-addon">
+                                        <span class="addon-prefix-label" style="min-width: 82px;">Est. Price</span>
+                                        <input type="number" id="pipsModePrice" placeholder="1.13710" step="any">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -204,7 +243,35 @@
                         <span class="panel-icon">📐</span>
                         <h2>Position Size</h2>
                     </div>
-                    <div class="panel-body">
+                        <!-- MT5 Execution Status Card -->
+                        <div class="execution-card status-safe" id="executionCard">
+                            <div class="execution-header">
+                                <div class="execution-icon-wrapper" id="executionIconWrapper">
+                                    <span class="execution-icon" id="executionIcon">✅</span>
+                                </div>
+                                <div class="execution-text">
+                                    <div class="execution-status-tag" id="executionTag">ORDER WILL EXECUTE</div>
+                                    <div class="execution-title" id="executionTitle">Sufficient Margin Available</div>
+                                </div>
+                            </div>
+                            <div class="execution-body" id="executionBody">
+                                <p class="execution-desc" id="executionDesc">Required margin is within your free balance.</p>
+                                <div class="margin-bar-container">
+                                    <div class="margin-progress-bar-bg">
+                                        <div class="margin-progress-bar" id="marginProgressBar" style="width: 0%;"></div>
+                                    </div>
+                                    <div class="margin-bar-labels">
+                                        <span id="marginBarLeft">Req. Margin: $0.00</span>
+                                        <span id="marginBarRight">Usage: 0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="execution-action hidden" id="executionAction">
+                                <button type="button" class="btn-fix-margin" id="btnFixMargin">
+                                    ⚡ Auto-Fix: Apply Max Executable Risk (<span id="btnFixRiskText">0.49%</span>)
+                                </button>
+                            </div>
+                        </div>
 
                         <!-- Main Lot Size Display -->
                         <div class="lot-display" id="lotDisplay">
@@ -247,6 +314,18 @@
                             <div class="result-card">
                                 <span class="result-label">Position Value</span>
                                 <span class="result-value" id="positionValue">$0.00</span>
+                            </div>
+                            <div class="result-card">
+                                <span class="result-label">Required Margin</span>
+                                <span class="result-value" id="marginResult">$0.00</span>
+                            </div>
+                            <div class="result-card">
+                                <span class="result-label">Margin Usage</span>
+                                <span class="result-value" id="marginUsageResult">0%</span>
+                            </div>
+                            <div class="result-card">
+                                <span class="result-label">Max Safe Lot</span>
+                                <span class="result-value" id="maxSafeLotsResult">—</span>
                             </div>
                         </div>
 
@@ -303,6 +382,10 @@
                 <div class="info-item">
                     <span class="info-label">Quote Currency</span>
                     <span class="info-value" id="infoQuote">USD</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Active Leverage</span>
+                    <span class="info-value" id="infoLeverage">1:100</span>
                 </div>
             </div>
         </main>
