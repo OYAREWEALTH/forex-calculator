@@ -104,6 +104,19 @@
                             </div>
                         </div>
 
+                        <!-- Contract Size / Tick Multiplier -->
+                        <div class="input-group">
+                            <div class="label-with-hint">
+                                <label for="contractSize">Contract Size / Multiplier</label>
+                                <span class="auto-badge" id="contractAutoBadge">100,000 contracts</span>
+                            </div>
+                            <div class="input-addon">
+                                <input type="number" id="contractSize" placeholder="100000" value="100000" min="0.0001" step="any">
+                                <span class="addon-suffix" id="contractSuffix">per lot</span>
+                            </div>
+                            <span class="helper-text" id="contractHelper">Tick value: $10.00 per pip for 1.00 lot</span>
+                        </div>
+
                         <!-- Account Balance -->
                         <div class="input-group">
                             <div class="label-with-hint">
@@ -171,6 +184,20 @@
                                     <input type="number" id="riskDollar" placeholder="100" value="100" min="0" step="1">
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Prop Firm Sizing Mode (Conservative vs Rounded) -->
+                        <div class="input-group">
+                            <div class="label-with-hint">
+                                <label>Prop Firm Risk Compliance</label>
+                                <span class="auto-badge" id="sizingBadge">Step 0.01</span>
+                            </div>
+                            <div class="toggle-group">
+                                <button class="toggle-btn active" id="sizingConservativeBtn" data-mode="conservative">🛡️ Conservative (Floor)</button>
+                                <button class="toggle-btn" id="sizingRoundedBtn" data-mode="rounded">Nearest (Round)</button>
+                                <div class="toggle-slider" id="sizingSlider"></div>
+                            </div>
+                            <span class="helper-text" id="sizingHelper">Conservative guarantees your actual loss never exceeds your risk target.</span>
                         </div>
 
                         <!-- Stop Loss Input -->
@@ -278,7 +305,7 @@
                             <div class="lot-glow"></div>
                             <div class="lot-value-wrapper">
                                 <span class="lot-value" id="lotSize">—</span>
-                                <span class="lot-unit">LOTS</span>
+                                <span class="lot-unit" id="lotUnitLabel">LOTS (CONSERVATIVE)</span>
                             </div>
                             <button class="copy-btn" id="copyBtn" title="Copy lot size">
                                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -287,6 +314,64 @@
                                 </svg>
                                 <span class="copy-tooltip" id="copyTooltip">Copied!</span>
                             </button>
+                        </div>
+
+                        <!-- Prop Firm Sizing Comparison Card -->
+                        <div class="sizing-comparison-card" id="sizingComparisonCard">
+                            <div class="comparison-header">
+                                <span class="comparison-title">⚖️ Prop Firm Sizing Options</span>
+                                <span class="comparison-badge" id="comparisonTargetBadge">Target Risk: $25.00 (0.50%)</span>
+                            </div>
+                            <div class="comparison-rows">
+                                <div class="comparison-row active-option" id="rowConservative" title="Click to use Conservative size">
+                                    <div class="comp-col-left">
+                                        <span class="comp-badge safe">SAFE</span>
+                                        <div class="comp-text-block">
+                                            <strong>Conservative (Floor)</strong>
+                                            <span class="comp-desc">Strictly below risk target</span>
+                                        </div>
+                                    </div>
+                                    <div class="comp-col-mid">
+                                        <span class="comp-lots" id="compLotsFloor">0.02</span> <span class="comp-unit">lots</span>
+                                    </div>
+                                    <div class="comp-col-right">
+                                        <span class="comp-risk safe" id="compRiskFloor">$18.07 (0.36%)</span>
+                                        <span class="comp-reward" id="compRewardFloor">Reward: $61.19</span>
+                                    </div>
+                                </div>
+                                <div class="comparison-row" id="rowRounded" title="Click to use Rounded size">
+                                    <div class="comp-col-left">
+                                        <span class="comp-badge warn">OVER</span>
+                                        <div class="comp-text-block">
+                                            <strong>Nearest (Round)</strong>
+                                            <span class="comp-desc">Exceeds target limit</span>
+                                        </div>
+                                    </div>
+                                    <div class="comp-col-mid">
+                                        <span class="comp-lots" id="compLotsRound">0.03</span> <span class="comp-unit">lots</span>
+                                    </div>
+                                    <div class="comp-col-right">
+                                        <span class="comp-risk warn" id="compRiskRound">$27.11 (0.54%)</span>
+                                        <span class="comp-reward" id="compRewardRound">Reward: $91.79</span>
+                                    </div>
+                                </div>
+                                <div class="comparison-row" id="rowExact">
+                                    <div class="comp-col-left">
+                                        <span class="comp-badge info">THEORY</span>
+                                        <div class="comp-text-block">
+                                            <strong>Exact Mathematical</strong>
+                                            <span class="comp-desc">Step 0.01 non-executable</span>
+                                        </div>
+                                    </div>
+                                    <div class="comp-col-mid">
+                                        <span class="comp-lots" id="compLotsExact">0.0277</span> <span class="comp-unit">lots</span>
+                                    </div>
+                                    <div class="comp-col-right">
+                                        <span class="comp-risk" id="compRiskExact">$25.00 (0.50%)</span>
+                                        <span class="comp-reward" id="compRewardExact">Reward: $84.62</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Result Details -->
