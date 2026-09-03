@@ -7,7 +7,21 @@
    ============================================ */
 
 // ========================================
-// INSTRUMENT DATABASE
+// ========================================
+// DEFAULT CONVERSION RATES (Maven Market Baseline)
+// ========================================
+const DEFAULT_CONVERSION_RATES = {
+    'USD/JPY': 156.74,
+    'USD/CHF': 0.8091,
+    'USD/CAD': 1.3823,
+    'EUR/USD': 1.1605,
+    'GBP/USD': 1.3495,
+    'AUD/USD': 0.7172,
+    'NZD/USD': 0.5863,
+};
+
+// ========================================
+// INSTRUMENT DATABASE (Maven MT5 Specifications)
 // ========================================
 const INSTRUMENTS = {
     // ── Forex Majors (quote = USD → no conversion) ──────────────
@@ -32,12 +46,12 @@ const INSTRUMENTS = {
         baseCcy: 'NZD', defaultLeverage: 100, decimals: 5
     },
 
-    // ── Forex Majors (self-converting: entry price IS the conversion rate) ──
-    'USDJPY': {
-        label: 'USD/JPY', category: 'Forex',
-        pipSize: 0.01, contractSize: 100_000, quoteCcy: 'JPY',
+    // ── Forex Majors (USD base → entry price self-converts or uses rate) ──
+    'USDCAD': {
+        label: 'USD/CAD', category: 'Forex',
+        pipSize: 0.0001, contractSize: 100_000, quoteCcy: 'CAD',
         baseCcy: 'USD', defaultLeverage: 100,
-        selfConvert: true, conversionOp: 'divide', decimals: 3
+        selfConvert: true, conversionOp: 'divide', decimals: 5
     },
     'USDCHF': {
         label: 'USD/CHF', category: 'Forex',
@@ -45,12 +59,18 @@ const INSTRUMENTS = {
         baseCcy: 'USD', defaultLeverage: 100,
         selfConvert: true, conversionOp: 'divide', decimals: 5
     },
-
-    // ── Forex Crosses (JPY quote → need USD/JPY for conversion) ─
-    'CHFJPY': {
-        label: 'CHF/JPY', category: 'Forex',
+    'USDJPY': {
+        label: 'USD/JPY', category: 'Forex',
         pipSize: 0.01, contractSize: 100_000, quoteCcy: 'JPY',
-        baseCcy: 'CHF', defaultLeverage: 100,
+        baseCcy: 'USD', defaultLeverage: 100,
+        selfConvert: true, conversionOp: 'divide', decimals: 3
+    },
+
+    // ── Forex Crosses (JPY Quote → divide by USD/JPY) ────────────
+    'AUDJPY': {
+        label: 'AUD/JPY', category: 'Forex',
+        pipSize: 0.01, contractSize: 100_000, quoteCcy: 'JPY',
+        baseCcy: 'AUD', defaultLeverage: 100,
         conversionPair: 'USD/JPY', conversionOp: 'divide', decimals: 3
     },
     'CADJPY': {
@@ -59,18 +79,50 @@ const INSTRUMENTS = {
         baseCcy: 'CAD', defaultLeverage: 100,
         conversionPair: 'USD/JPY', conversionOp: 'divide', decimals: 3
     },
-    'AUDJPY': {
-        label: 'AUD/JPY', category: 'Forex',
+    'EURJPY': {
+        label: 'EUR/JPY', category: 'Forex',
         pipSize: 0.01, contractSize: 100_000, quoteCcy: 'JPY',
-        baseCcy: 'AUD', defaultLeverage: 100,
+        baseCcy: 'EUR', defaultLeverage: 100,
+        conversionPair: 'USD/JPY', conversionOp: 'divide', decimals: 3
+    },
+    'GBPJPY': {
+        label: 'GBP/JPY', category: 'Forex',
+        pipSize: 0.01, contractSize: 100_000, quoteCcy: 'JPY',
+        baseCcy: 'GBP', defaultLeverage: 100,
+        conversionPair: 'USD/JPY', conversionOp: 'divide', decimals: 3
+    },
+    'NZDJPY': {
+        label: 'NZD/JPY', category: 'Forex',
+        pipSize: 0.01, contractSize: 100_000, quoteCcy: 'JPY',
+        baseCcy: 'NZD', defaultLeverage: 100,
         conversionPair: 'USD/JPY', conversionOp: 'divide', decimals: 3
     },
 
-    // ── Forex Crosses (CAD quote → need USD/CAD for conversion) ─
-    'GBPCAD': {
-        label: 'GBP/CAD', category: 'Forex',
+    // ── Forex Crosses (CHF Quote → divide by USD/CHF) ────────────
+    'AUDCHF': {
+        label: 'AUD/CHF', category: 'Forex',
+        pipSize: 0.0001, contractSize: 100_000, quoteCcy: 'CHF',
+        baseCcy: 'AUD', defaultLeverage: 100,
+        conversionPair: 'USD/CHF', conversionOp: 'divide', decimals: 5
+    },
+    'CADCHF': {
+        label: 'CAD/CHF', category: 'Forex',
+        pipSize: 0.0001, contractSize: 100_000, quoteCcy: 'CHF',
+        baseCcy: 'CAD', defaultLeverage: 100,
+        conversionPair: 'USD/CHF', conversionOp: 'divide', decimals: 5
+    },
+    'EURCHF': {
+        label: 'EUR/CHF', category: 'Forex',
+        pipSize: 0.0001, contractSize: 100_000, quoteCcy: 'CHF',
+        baseCcy: 'EUR', defaultLeverage: 100,
+        conversionPair: 'USD/CHF', conversionOp: 'divide', decimals: 5
+    },
+
+    // ── Forex Crosses (CAD Quote → divide by USD/CAD) ────────────
+    'AUDCAD': {
+        label: 'AUD/CAD', category: 'Forex',
         pipSize: 0.0001, contractSize: 100_000, quoteCcy: 'CAD',
-        baseCcy: 'GBP', defaultLeverage: 100,
+        baseCcy: 'AUD', defaultLeverage: 100,
         conversionPair: 'USD/CAD', conversionOp: 'divide', decimals: 5
     },
     'EURCAD': {
@@ -78,6 +130,66 @@ const INSTRUMENTS = {
         pipSize: 0.0001, contractSize: 100_000, quoteCcy: 'CAD',
         baseCcy: 'EUR', defaultLeverage: 100,
         conversionPair: 'USD/CAD', conversionOp: 'divide', decimals: 5
+    },
+
+    // ── Forex Crosses (AUD, NZD, GBP Quote → multiply by quote/USD) ──
+    'AUDNZD': {
+        label: 'AUD/NZD', category: 'Forex',
+        pipSize: 0.0001, contractSize: 100_000, quoteCcy: 'NZD',
+        baseCcy: 'AUD', defaultLeverage: 100,
+        conversionPair: 'NZD/USD', conversionOp: 'multiply', decimals: 5
+    },
+    'EURAUD': {
+        label: 'EUR/AUD', category: 'Forex',
+        pipSize: 0.0001, contractSize: 100_000, quoteCcy: 'AUD',
+        baseCcy: 'EUR', defaultLeverage: 100,
+        conversionPair: 'AUD/USD', conversionOp: 'multiply', decimals: 5
+    },
+    'EURGBP': {
+        label: 'EUR/GBP', category: 'Forex',
+        pipSize: 0.0001, contractSize: 100_000, quoteCcy: 'GBP',
+        baseCcy: 'EUR', defaultLeverage: 100,
+        conversionPair: 'GBP/USD', conversionOp: 'multiply', decimals: 5
+    },
+
+    // ── Indices (Verified Maven MT5 Specifications) ─────────────
+    'US30': {
+        label: 'US30 (Dow Jones)', category: 'Indices',
+        pipSize: 1, contractSize: 5, quoteCcy: 'USD',
+        unit: 'contracts ($5/pt)', pipLabel: 'points', defaultLeverage: 20, decimals: 0
+    },
+    'US100': {
+        label: 'US100 (Nasdaq 100)', category: 'Indices',
+        pipSize: 1, contractSize: 20, quoteCcy: 'USD',
+        unit: 'contracts ($20/pt)', pipLabel: 'points', defaultLeverage: 20, decimals: 2
+    },
+    'US500': {
+        label: 'US500 (S&P 500)', category: 'Indices',
+        pipSize: 1, contractSize: 50, quoteCcy: 'USD',
+        unit: 'contracts ($50/pt)', pipLabel: 'points', defaultLeverage: 20, decimals: 1
+    },
+    'US2000': {
+        label: 'US2000 (Russell 2000)', category: 'Indices',
+        pipSize: 1, contractSize: 200, quoteCcy: 'USD',
+        unit: 'contracts ($200/pt)', pipLabel: 'points', defaultLeverage: 20, decimals: 1
+    },
+    'GER30': {
+        label: 'GER30 (DAX 40)', category: 'Indices',
+        pipSize: 1, contractSize: 25, quoteCcy: 'EUR',
+        unit: 'contracts (€25/pt)', pipLabel: 'points', defaultLeverage: 20, decimals: 1,
+        conversionPair: 'EUR/USD', conversionOp: 'multiply'
+    },
+    'UK100': {
+        label: 'UK100 (FTSE 100)', category: 'Indices',
+        pipSize: 1, contractSize: 10, quoteCcy: 'GBP',
+        unit: 'contracts (£10/pt)', pipLabel: 'points', defaultLeverage: 20, decimals: 1,
+        conversionPair: 'GBP/USD', conversionOp: 'multiply'
+    },
+    'JAP225': {
+        label: 'JAP225 (Nikkei 225)', category: 'Indices',
+        pipSize: 1, contractSize: 10, quoteCcy: 'JPY',
+        unit: 'contracts (¥10/pt)', pipLabel: 'points', defaultLeverage: 20, decimals: 0,
+        conversionPair: 'USD/JPY', conversionOp: 'divide'
     },
 
     // ── Commodities ─────────────────────────────────────────────
@@ -92,36 +204,7 @@ const INSTRUMENTS = {
         unit: 'oz', defaultLeverage: 30, decimals: 3
     },
 
-    // ── Indices (Maven OMO MT5 Specs: US30 = 5 contracts / $5 per point) ──
-    'US30': {
-        label: 'US30 (Dow Jones)', category: 'Indices',
-        pipSize: 1, contractSize: 5, quoteCcy: 'USD',
-        unit: 'contracts ($5/pt)', pipLabel: 'points', defaultLeverage: 20, decimals: 2
-    },
-    'US500': {
-        label: 'US500 (S&P 500)', category: 'Indices',
-        pipSize: 1, contractSize: 1, quoteCcy: 'USD',
-        unit: 'contracts', pipLabel: 'points', defaultLeverage: 20, decimals: 2
-    },
-    'US100': {
-        label: 'US100 (Nasdaq 100)', category: 'Indices',
-        pipSize: 1, contractSize: 1, quoteCcy: 'USD',
-        unit: 'contracts', pipLabel: 'points', defaultLeverage: 20, decimals: 2
-    },
-    'GER30': {
-        label: 'GER30 (DAX)', category: 'Indices',
-        pipSize: 1, contractSize: 1, quoteCcy: 'EUR',
-        unit: 'contracts', pipLabel: 'points', defaultLeverage: 20, decimals: 2,
-        conversionPair: 'EUR/USD', conversionOp: 'multiply'
-    },
-    'JP225': {
-        label: 'JP225 (Nikkei 225)', category: 'Indices',
-        pipSize: 1, contractSize: 100, quoteCcy: 'JPY',
-        unit: 'contracts', pipLabel: 'points', defaultLeverage: 20, decimals: 0,
-        conversionPair: 'USD/JPY', conversionOp: 'divide'
-    },
-
-    // ── Crypto ──────────────────────────────────────────────────
+    // ── Crypto (1:2 Leverage on Maven MT5) ──────────────────────
     'BTCUSD': {
         label: 'BTC/USD (Bitcoin)', category: 'Crypto',
         pipSize: 0.01, contractSize: 1, quoteCcy: 'USD',
@@ -341,12 +424,22 @@ function getNotionalValuePerLotUSD(inst, priceVal, conversionRate, contractSize)
         } else if (inst.quoteCcy === 'USD') {
             return cSize * price;
         } else {
-            if (inst.conversionPair === 'USD/JPY') {
-                const usdjpy = (conversionRate && conversionRate > 0) ? conversionRate : 160;
-                return (cSize * price) / usdjpy;
-            } else if (inst.conversionPair === 'USD/CAD') {
-                const usdcad = (conversionRate && conversionRate > 0) ? conversionRate : 1.38;
-                return (cSize * price) / usdcad;
+            // Forex crosses: Margin is based on base currency converted to USD
+            if (inst.baseCcy === 'EUR') {
+                const eurusd = DEFAULT_CONVERSION_RATES['EUR/USD'] || 1.1605;
+                return cSize * eurusd;
+            } else if (inst.baseCcy === 'GBP') {
+                const gbpusd = DEFAULT_CONVERSION_RATES['GBP/USD'] || 1.3495;
+                return cSize * gbpusd;
+            } else if (inst.baseCcy === 'AUD') {
+                const audusd = DEFAULT_CONVERSION_RATES['AUD/USD'] || 0.7172;
+                return cSize * audusd;
+            } else if (inst.baseCcy === 'NZD') {
+                const nzdusd = DEFAULT_CONVERSION_RATES['NZD/USD'] || 0.5863;
+                return cSize * nzdusd;
+            } else if (inst.baseCcy === 'CAD') {
+                const usdcad = DEFAULT_CONVERSION_RATES['USD/CAD'] || 1.3823;
+                return cSize / usdcad;
             }
             return cSize * price;
         }
@@ -356,10 +449,13 @@ function getNotionalValuePerLotUSD(inst, priceVal, conversionRate, contractSize)
         if (inst.quoteCcy === 'USD') {
             return cSize * price;
         } else if (inst.quoteCcy === 'EUR') {
-            const eurusd = (conversionRate && conversionRate > 0) ? conversionRate : 1.137;
+            const eurusd = (conversionRate && conversionRate > 0) ? conversionRate : (DEFAULT_CONVERSION_RATES['EUR/USD'] || 1.1605);
             return cSize * price * eurusd;
+        } else if (inst.quoteCcy === 'GBP') {
+            const gbpusd = (conversionRate && conversionRate > 0) ? conversionRate : (DEFAULT_CONVERSION_RATES['GBP/USD'] || 1.3495);
+            return cSize * price * gbpusd;
         } else if (inst.quoteCcy === 'JPY') {
-            const usdjpy = (conversionRate && conversionRate > 0) ? conversionRate : 160;
+            const usdjpy = (conversionRate && conversionRate > 0) ? conversionRate : (DEFAULT_CONVERSION_RATES['USD/JPY'] || 156.74);
             return (cSize * price) / usdjpy;
         }
         return cSize * price;
@@ -425,14 +521,16 @@ function calculate() {
     let conversionRateVal = null;
 
     if (inst.quoteCcy !== 'USD') {
+        const defaultRate = DEFAULT_CONVERSION_RATES[inst.conversionPair] || 1.0;
+
         if (inst.selfConvert && state.slMode === 'price' && entryPriceVal) {
             conversionRate = entryPriceVal;
             conversionRateVal = entryPriceVal;
         } else if (inst.selfConvert && state.slMode === 'pips') {
-            conversionRate = parseFloat(DOM.conversionRate.value) || entryPriceVal || 1;
+            conversionRate = parseFloat(DOM.conversionRate.value) || parseFloat(DOM.conversionRate.placeholder) || entryPriceVal || defaultRate;
             conversionRateVal = conversionRate;
         } else if (inst.conversionPair) {
-            conversionRate = parseFloat(DOM.conversionRate.value);
+            conversionRate = parseFloat(DOM.conversionRate.value) || parseFloat(DOM.conversionRate.placeholder) || defaultRate;
             conversionRateVal = conversionRate;
         }
 
@@ -849,16 +947,19 @@ function updateConversionField() {
         DOM.conversionLabel.textContent = getConversionLabel(inst);
         DOM.conversionHelper.textContent = getConversionHelper(inst);
 
-        if (inst.conversionPair === 'USD/JPY' || (inst.selfConvert && inst.quoteCcy === 'JPY')) {
-            DOM.conversionRate.placeholder = '163.73';
-        } else if (inst.conversionPair === 'USD/CAD') {
-            DOM.conversionRate.placeholder = '1.3800';
-        } else if (inst.conversionPair === 'EUR/USD') {
-            DOM.conversionRate.placeholder = '1.1371';
-        } else if (inst.selfConvert && inst.quoteCcy === 'CHF') {
-            DOM.conversionRate.placeholder = '0.8192';
-        } else {
-            DOM.conversionRate.placeholder = '1.0000';
+        if (inst.selfConvert) {
+            if (inst.quoteCcy === 'JPY') {
+                DOM.conversionRate.placeholder = '156.74';
+            } else if (inst.quoteCcy === 'CHF') {
+                DOM.conversionRate.placeholder = '0.8091';
+            } else if (inst.quoteCcy === 'CAD') {
+                DOM.conversionRate.placeholder = '1.3823';
+            } else {
+                DOM.conversionRate.placeholder = '1.0000';
+            }
+        } else if (inst.conversionPair) {
+            const defaultRate = DEFAULT_CONVERSION_RATES[inst.conversionPair];
+            DOM.conversionRate.placeholder = defaultRate ? String(defaultRate) : '1.0000';
         }
     } else {
         DOM.conversionGroup.classList.add('hidden');
@@ -900,27 +1001,46 @@ function updatePlaceholders() {
     const key = getInstrumentKey();
 
     const placeholders = {
-        'EURUSD':  { entry: '1.13710', sl: '1.13210', tp: '1.14210', pips: '50', tpPips: '50' },
-        'GBPUSD':  { entry: '1.32990', sl: '1.32490', tp: '1.33490', pips: '50', tpPips: '50' },
-        'USDJPY':  { entry: '163.730', sl: '163.230', tp: '164.230', pips: '50', tpPips: '50' },
-        'USDCHF':  { entry: '0.81920', sl: '0.82420', tp: '0.81420', pips: '50', tpPips: '50' },
-        'AUDUSD':  { entry: '0.69720', sl: '0.69220', tp: '0.70220', pips: '50', tpPips: '50' },
-        'NZDUSD':  { entry: '0.57710', sl: '0.57210', tp: '0.58210', pips: '50', tpPips: '50' },
-        'CHFJPY':  { entry: '199.850', sl: '199.350', tp: '200.350', pips: '50', tpPips: '50' },
-        'CADJPY':  { entry: '115.980', sl: '115.480', tp: '116.480', pips: '50', tpPips: '50' },
-        'AUDJPY':  { entry: '114.150', sl: '113.650', tp: '114.650', pips: '50', tpPips: '50' },
-        'GBPCAD':  { entry: '1.87740', sl: '1.87240', tp: '1.88240', pips: '50', tpPips: '50' },
-        'EURCAD':  { entry: '1.60520', sl: '1.60020', tp: '1.61020', pips: '50', tpPips: '50' },
-        'XAUUSD':  { entry: '4049.88', sl: '4039.88', tp: '4069.88', pips: '1000', tpPips: '2000' },
-        'XAGUSD':  { entry: '57.370', sl: '57.270', tp: '57.570', pips: '100', tpPips: '200' },
-        // User's verified Maven OMO US30 Setup
-        'US30':    { entry: '53322.30', sl: '53141.60', tp: '53934.20', pips: '180.7', tpPips: '611.9' },
-        'US500':   { entry: '7402.80', sl: '7392.80', tp: '7422.80', pips: '10', tpPips: '20' },
-        'US100':   { entry: '27822.20', sl: '27722.20', tp: '28022.20', pips: '100', tpPips: '200' },
-        'GER30':   { entry: '25476.78', sl: '25426.78', tp: '25576.78', pips: '50', tpPips: '100' },
-        'JP225':   { entry: '62501', sl: '62401', tp: '62701', pips: '100', tpPips: '200' },
-        'BTCUSD':  { entry: '63488.42', sl: '63388.42', tp: '63688.42', pips: '10000', tpPips: '20000' },
-        'ETHUSD':  { entry: '1884.52', sl: '1874.52', tp: '1904.52', pips: '1000', tpPips: '2000' },
+        // Forex Majors
+        'EURUSD':  { entry: '1.16055', sl: '1.15755', tp: '1.16655', pips: '30', tpPips: '60' },
+        'GBPUSD':  { entry: '1.34950', sl: '1.34550', tp: '1.35750', pips: '40', tpPips: '80' },
+        'AUDUSD':  { entry: '0.71720', sl: '0.71420', tp: '0.72320', pips: '30', tpPips: '60' },
+        'NZDUSD':  { entry: '0.58635', sl: '0.58335', tp: '0.59235', pips: '30', tpPips: '60' },
+        'USDCAD':  { entry: '1.38235', sl: '1.37935', tp: '1.38835', pips: '30', tpPips: '60' },
+        'USDCHF':  { entry: '0.80915', sl: '0.81215', tp: '0.80315', pips: '30', tpPips: '60' },
+        'USDJPY':  { entry: '156.745', sl: '156.245', tp: '157.745', pips: '50', tpPips: '100' },
+
+        // Forex Crosses
+        'AUDCAD':  { entry: '0.99125', sl: '0.98825', tp: '0.99725', pips: '30', tpPips: '60' },
+        'AUDCHF':  { entry: '0.58035', sl: '0.57735', tp: '0.58635', pips: '30', tpPips: '60' },
+        'AUDJPY':  { entry: '112.410', sl: '111.910', tp: '113.410', pips: '50', tpPips: '100' },
+        'AUDNZD':  { entry: '1.22315', sl: '1.22015', tp: '1.22915', pips: '30', tpPips: '60' },
+        'CADCHF':  { entry: '0.58545', sl: '0.58245', tp: '0.59145', pips: '30', tpPips: '60' },
+        'CADJPY':  { entry: '113.400', sl: '112.900', tp: '114.400', pips: '50', tpPips: '100' },
+        'EURAUD':  { entry: '1.61820', sl: '1.61420', tp: '1.62620', pips: '40', tpPips: '80' },
+        'EURCAD':  { entry: '1.60410', sl: '1.60010', tp: '1.61210', pips: '40', tpPips: '80' },
+        'EURCHF':  { entry: '0.93915', sl: '0.93615', tp: '0.94515', pips: '30', tpPips: '60' },
+        'EURGBP':  { entry: '0.86005', sl: '0.85755', tp: '0.86505', pips: '25', tpPips: '50' },
+        'EURJPY':  { entry: '181.915', sl: '181.315', tp: '183.115', pips: '60', tpPips: '120' },
+        'GBPJPY':  { entry: '211.510', sl: '210.810', tp: '212.910', pips: '70', tpPips: '140' },
+        'NZDJPY':  { entry: '91.900',  sl: '91.400',  tp: '92.900',  pips: '50', tpPips: '100' },
+
+        // Indices (Maven Specs)
+        'US30':    { entry: '53110',    sl: '52930',    tp: '53500',    pips: '180', tpPips: '390' },
+        'US100':   { entry: '29165.00', sl: '29065.00', tp: '29365.00', pips: '100', tpPips: '200' },
+        'US500':   { entry: '7669.0',   sl: '7644.0',   tp: '7719.0',   pips: '25',  tpPips: '50' },
+        'US2000':  { entry: '2952.5',   sl: '2942.5',   tp: '2972.5',   pips: '10',  tpPips: '20' },
+        'GER30':   { entry: '25860.0',  sl: '25810.0',  tp: '25960.0',  pips: '50',  tpPips: '100' },
+        'UK100':   { entry: '10760.0',  sl: '10720.0',  tp: '10840.0',  pips: '40',  tpPips: '80' },
+        'JAP225':  { entry: '64090',    sl: '63890',    tp: '64490',    pips: '200', tpPips: '400' },
+
+        // Commodities
+        'XAUUSD':  { entry: '4427.00',  sl: '4417.00',  tp: '4447.00',  pips: '1000', tpPips: '2000' },
+        'XAGUSD':  { entry: '65.880',   sl: '65.580',   tp: '66.480',   pips: '300',  tpPips: '600' },
+
+        // Crypto
+        'BTCUSD':  { entry: '77978.00', sl: '77478.00', tp: '78978.00', pips: '50000', tpPips: '100000' },
+        'ETHUSD':  { entry: '2408.00',  sl: '2388.00',  tp: '2448.00',  pips: '2000',  tpPips: '4000' },
     };
 
     const ph = placeholders[key] || { entry: '1.00000', sl: '0.99500', tp: '1.00500', pips: '50', tpPips: '50' };
@@ -944,22 +1064,46 @@ function updateContractSizeForInstrument() {
         DOM.contractAutoBadge.textContent = 'Maven: 5 contracts ($5/pt)';
         DOM.contractSuffix.textContent = 'contracts ($5/pt)';
         DOM.contractHelper.textContent = 'Maven OMO: 1 lot = $5.00 per index point (5 contracts)';
+    } else if (key === 'US100') {
+        DOM.contractAutoBadge.textContent = 'Maven: 20 contracts ($20/pt)';
+        DOM.contractSuffix.textContent = 'contracts ($20/pt)';
+        DOM.contractHelper.textContent = 'Maven OMO: 1 lot = $20.00 per index point (20 contracts)';
+    } else if (key === 'US500') {
+        DOM.contractAutoBadge.textContent = 'Maven: 50 contracts ($50/pt)';
+        DOM.contractSuffix.textContent = 'contracts ($50/pt)';
+        DOM.contractHelper.textContent = 'Maven OMO: 1 lot = $50.00 per index point (50 contracts)';
+    } else if (key === 'US2000') {
+        DOM.contractAutoBadge.textContent = 'Maven: 200 contracts ($200/pt)';
+        DOM.contractSuffix.textContent = 'contracts ($200/pt)';
+        DOM.contractHelper.textContent = 'Maven OMO: 1 lot = $200.00 per index point (200 contracts)';
+    } else if (key === 'GER30') {
+        DOM.contractAutoBadge.textContent = 'Maven: 25 contracts (€25/pt)';
+        DOM.contractSuffix.textContent = 'contracts (€25/pt)';
+        DOM.contractHelper.textContent = 'Maven OMO: 1 lot = €25.00 per index point (25 contracts)';
+    } else if (key === 'UK100') {
+        DOM.contractAutoBadge.textContent = 'Maven: 10 contracts (£10/pt)';
+        DOM.contractSuffix.textContent = 'contracts (£10/pt)';
+        DOM.contractHelper.textContent = 'Maven OMO: 1 lot = £10.00 per index point (10 contracts)';
+    } else if (key === 'JAP225') {
+        DOM.contractAutoBadge.textContent = 'Maven: 10 contracts (¥10/pt)';
+        DOM.contractSuffix.textContent = 'contracts (¥10/pt)';
+        DOM.contractHelper.textContent = 'Maven OMO: 1 lot = ¥10 per index point (10 contracts)';
     } else if (inst.category === 'Forex') {
         DOM.contractAutoBadge.textContent = 'Standard: 100,000 units';
         DOM.contractSuffix.textContent = 'units';
         DOM.contractHelper.textContent = 'Standard Forex: 100,000 units of base currency per lot';
     } else if (key === 'XAUUSD') {
-        DOM.contractAutoBadge.textContent = 'Standard: 100 oz';
+        DOM.contractAutoBadge.textContent = 'Maven: 100 oz ($1/pip)';
         DOM.contractSuffix.textContent = 'oz';
         DOM.contractHelper.textContent = 'Gold: 100 troy ounces per lot ($1.00/pip, $100 per $1 move)';
     } else if (key === 'XAGUSD') {
-        DOM.contractAutoBadge.textContent = 'Standard: 5,000 oz';
+        DOM.contractAutoBadge.textContent = 'Maven: 5,000 oz ($5/pip)';
         DOM.contractSuffix.textContent = 'oz';
-        DOM.contractHelper.textContent = 'Silver: 5,000 troy ounces per lot ($5.00/pip)';
+        DOM.contractHelper.textContent = 'Silver: 5,000 troy ounces per lot ($5.00/pip, $5,000 per $1 move)';
     } else if (inst.category === 'Crypto') {
-        DOM.contractAutoBadge.textContent = 'Standard: 1 unit';
+        DOM.contractAutoBadge.textContent = 'Maven: 1 unit (1:2 leverage)';
         DOM.contractSuffix.textContent = inst.unit;
-        DOM.contractHelper.textContent = `${inst.label}: 1 ${inst.unit} per lot ($0.01 per pip)`;
+        DOM.contractHelper.textContent = `${inst.label}: 1 ${inst.unit} per lot ($0.01 per pip, 1:2 crypto leverage)`;
     } else {
         DOM.contractAutoBadge.textContent = `Default: ${cSize} ${inst.unit || 'contracts'}`;
         DOM.contractSuffix.textContent = inst.unit || 'contracts';
