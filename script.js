@@ -10,6 +10,50 @@
 // ========================================
 // DEFAULT CONVERSION RATES (Maven Market Baseline)
 // ========================================
+
+const DEFAULT_COSTS = {
+    // Forex Majors (Maven typical raw spread 0.8-1.2 pips, $6/lot round-trip)
+    'EURUSD':  { spread: 0.8, comm: 6.0 },
+    'GBPUSD':  { spread: 1.0, comm: 6.0 },
+    'AUDUSD':  { spread: 1.0, comm: 6.0 },
+    'NZDUSD':  { spread: 1.2, comm: 6.0 },
+    'USDCAD':  { spread: 1.2, comm: 6.0 },
+    'USDCHF':  { spread: 1.2, comm: 6.0 },
+    'USDJPY':  { spread: 1.0, comm: 6.0 },
+
+    // Forex Crosses (Maven typical raw spread 1.5-2.0 pips, $6/lot round-trip)
+    'AUDCAD':  { spread: 1.5, comm: 6.0 },
+    'AUDCHF':  { spread: 1.5, comm: 6.0 },
+    'AUDJPY':  { spread: 1.5, comm: 6.0 },
+    'AUDNZD':  { spread: 1.8, comm: 6.0 },
+    'CADCHF':  { spread: 1.8, comm: 6.0 },
+    'CADJPY':  { spread: 1.5, comm: 6.0 },
+    'EURAUD':  { spread: 1.8, comm: 6.0 },
+    'EURCAD':  { spread: 1.8, comm: 6.0 },
+    'EURCHF':  { spread: 1.5, comm: 6.0 },
+    'EURGBP':  { spread: 1.2, comm: 6.0 },
+    'EURJPY':  { spread: 1.5, comm: 6.0 },
+    'GBPJPY':  { spread: 2.0, comm: 6.0 },
+    'NZDJPY':  { spread: 1.8, comm: 6.0 },
+
+    // Indices (Maven: $0 Commission Free, tight points spread)
+    'US30':    { spread: 2.0, comm: 0.0 },
+    'US100':   { spread: 1.5, comm: 0.0 },
+    'US500':   { spread: 0.5, comm: 0.0 },
+    'US2000':  { spread: 0.5, comm: 0.0 },
+    'GER30':   { spread: 1.5, comm: 0.0 },
+    'UK100':   { spread: 1.5, comm: 0.0 },
+    'JAP225':  { spread: 8.0, comm: 0.0 },
+
+    // Commodities (Maven: Gold 100oz, $6 comm)
+    'XAUUSD':  { spread: 2.5, comm: 6.0 },
+    'XAGUSD':  { spread: 2.5, comm: 6.0 },
+
+    // Crypto (Maven: $0 Commission Free)
+    'BTCUSD':  { spread: 25.0, comm: 0.0 },
+    'ETHUSD':  { spread: 2.0,  comm: 0.0 },
+};
+
 const DEFAULT_CONVERSION_RATES = {
     'USD/JPY': 156.74,
     'USD/CHF': 0.8091,
@@ -1067,6 +1111,29 @@ function updatePlaceholders() {
     DOM.pipsModePrice.placeholder = ph.entry;
 }
 
+
+function updateCostsForInstrument() {
+    const key = getInstrumentKey();
+    const inst = getInstrument();
+    const costs = DEFAULT_COSTS[key] || { spread: 1.0, comm: inst.category === 'Forex' ? 6.0 : 0.0 };
+    
+    const spreadInput = document.getElementById('spreadPips');
+    const commInput = document.getElementById('commissionLot');
+    const spreadSuffix = document.getElementById('spreadSuffix');
+
+    if (spreadInput) {
+        spreadInput.value = costs.spread;
+        spreadInput.placeholder = costs.spread;
+    }
+    if (commInput) {
+        commInput.value = costs.comm;
+        commInput.placeholder = costs.comm.toFixed(2);
+    }
+    if (spreadSuffix) {
+        spreadSuffix.textContent = inst.category === 'Indices' ? 'pts' : 'pips';
+    }
+}
+
 function updateContractSizeForInstrument() {
     const inst = getInstrument();
     const key = getInstrumentKey();
@@ -1157,6 +1224,7 @@ function updateLeverageForInstrument() {
 // Instrument change
 DOM.instrument.addEventListener('change', () => {
     updateContractSizeForInstrument();
+    updateCostsForInstrument();
     updateLeverageForInstrument();
     updateConversionField();
     updateInfoBar();
@@ -1330,6 +1398,7 @@ function init() {
     DOM.sizingSlider.classList.remove('right');
 
     updateContractSizeForInstrument();
+    updateCostsForInstrument();
     updateLeverageForInstrument();
     updateConversionField();
     updateInfoBar();

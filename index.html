@@ -273,26 +273,29 @@
                             <div class="input-addon">
                                 <input type="number" id="conversionRate" placeholder="163.73" step="any">
                             </div>
+                            <span class="helper-text" id="conversionHelper">Needed to convert pip value to USD</span>
                         </div>
 
                         <!-- Phantom Costs (Spread & Commission) -->
                         <div class="input-group costs-group" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
-                            <label style="display: flex; justify-content: space-between; align-items: center;">
-                                <span>Trading Costs <span style="font-weight: 400; color: var(--text-muted);">(Phantom Math)</span></span>
+                            <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span>Execution Costs <span style="font-size: 0.72rem; color: var(--primary); background: rgba(0, 210, 106, 0.12); padding: 2px 7px; border-radius: 4px; font-weight: 600; margin-left: 6px;">⚡ Auto-Filled for Maven</span></span>
                             </label>
                             <div class="price-inputs">
-                                <div class="input-addon" title="Current Spread in pips (e.g. 1.0)">
+                                <div class="input-addon" title="Current Spread (Auto-filled for Maven prop firm)">
                                     <span class="addon-prefix-label" style="min-width: 60px;">Spread</span>
-                                    <input type="number" id="spreadPips" placeholder="1.0" min="0" step="0.1" value="0">
+                                    <input type="number" id="spreadPips" placeholder="1.0" min="0" step="0.1" value="1.0">
+                                    <span class="addon-suffix" id="spreadSuffix">pips</span>
                                 </div>
-                                <div class="input-addon" title="Round-trip commission per lot in $">
+                                <div class="input-addon" title="Round-trip commission per lot in $ (Auto-filled for Maven prop firm)">
                                     <span class="addon-prefix-label" style="min-width: 60px;">Comm.</span>
-                                    <input type="number" id="commissionLot" placeholder="6.00" min="0" step="0.5" value="0">
+                                    <input type="number" id="commissionLot" placeholder="6.00" min="0" step="0.5" value="6.00">
                                     <span class="addon-suffix">$/lot</span>
                                 </div>
                             </div>
-                        </div>
-                        <span class="helper-text" id="conversionHelper">Needed to convert pip value to USD</span>
+                            <span class="helper-text" style="margin-top: 6px; font-size: 0.73rem; color: var(--text-muted);">
+                                Auto-filled with Maven defaults so your SL is protected. You can edit anytime if spread fluctuates.
+                            </span>
                         </div>
                     </div>
                 </div>
