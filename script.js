@@ -552,11 +552,16 @@ function calculate() {
         pipValueUSD = pipValueQuote * conversionRate;
     }
 
-    // 5. Calculate Exact Theoretical Lot Size
-    const riskPerLot = slPips * pipValueUSD;
+    // 5. Phantom Costs
+    const spreadPips = parseFloat(document.getElementById('spreadPips').value) || 0;
+    const commissionLot = parseFloat(document.getElementById('commissionLot').value) || 0;
+
+    // 6. Calculate Exact Theoretical Lot Size (Phantom Adjusted)
+    const adjustedSlPips = slPips + spreadPips;
+    const riskPerLot = (adjustedSlPips * pipValueUSD) + commissionLot;
     const exactLotSize = riskAmount / riskPerLot;
 
-    // 6. Volume Step 0.01 Calculations (Conservative Floor vs Nearest Round)
+    // 7. Volume Step 0.01 Calculations (Conservative Floor vs Nearest Round)
     const step = 0.01;
     let floorLotSize = Math.floor(exactLotSize / step) * step;
     floorLotSize = Math.round(floorLotSize * 100) / 100;
@@ -578,13 +583,13 @@ function calculate() {
     const activeLotSize = (state.sizingMode === 'conservative') ? floorLotSize : roundLotSize;
 
     // Actual Risk for each lot size
-    const floorRiskUSD = floorLotSize * slPips * pipValueUSD;
+    const floorRiskUSD = floorLotSize * riskPerLot;
     const floorRiskPct = (floorRiskUSD / balance) * 100;
 
-    const roundRiskUSD = roundLotSize * slPips * pipValueUSD;
+    const roundRiskUSD = roundLotSize * riskPerLot;
     const roundRiskPct = (roundRiskUSD / balance) * 100;
 
-    const exactRiskUSD = exactLotSize * slPips * pipValueUSD;
+    const exactRiskUSD = exactLotSize * riskPerLot;
     const exactRiskPct = (exactRiskUSD / balance) * 100;
 
     const activeRiskUSD = (state.sizingMode === 'conservative') ? floorRiskUSD : roundRiskUSD;
@@ -602,22 +607,21 @@ function calculate() {
         if (tpPriceVal && entryPriceVal && tpPriceVal !== entryPriceVal) {
             const tpDist = Math.abs(tpPriceVal - entryPriceVal);
             tpPips = tpDist / inst.pipSize;
-            floorRewardUSD = tpPips * pipValueUSD * floorLotSize;
-            roundRewardUSD = tpPips * pipValueUSD * roundLotSize;
-            exactRewardUSD = tpPips * pipValueUSD * exactLotSize;
-            activeRewardUSD = tpPips * pipValueUSD * activeLotSize;
-            rrRatio = tpPips / slPips;
         }
     } else {
         const tpPipsVal = parseFloat(DOM.tpPips.value);
         if (tpPipsVal && tpPipsVal > 0) {
             tpPips = tpPipsVal;
-            floorRewardUSD = tpPips * pipValueUSD * floorLotSize;
-            roundRewardUSD = tpPips * pipValueUSD * roundLotSize;
-            exactRewardUSD = tpPips * pipValueUSD * exactLotSize;
-            activeRewardUSD = tpPips * pipValueUSD * activeLotSize;
-            rrRatio = tpPips / slPips;
         }
+    }
+
+    if (tpPips !== null) {
+        const rewardPerLot = ((tpPips - spreadPips) * pipValueUSD) - commissionLot;
+        floorRewardUSD = Math.max(0, floorLotSize * rewardPerLot);
+        roundRewardUSD = Math.max(0, roundLotSize * rewardPerLot);
+        exactRewardUSD = Math.max(0, exactLotSize * rewardPerLot);
+        activeRewardUSD = Math.max(0, activeLotSize * rewardPerLot);
+        rrRatio = activeRiskUSD > 0 ? activeRewardUSD / activeRiskUSD : 0;
     }
 
     // 8. Calculate Position Value & Required Margin (MT5 Check)
@@ -631,7 +635,7 @@ function calculate() {
     // 9. Calculate Maximum Executable Lot & Risk based on Margin
     const marginPerLot = notionalPerLotUSD / leverage;
     const maxSafeLots = marginPerLot > 0 ? (balance / marginPerLot) : 0;
-    const maxSafeRiskUSD = maxSafeLots * slPips * pipValueUSD;
+    const maxSafeRiskUSD = maxSafeLots * riskPerLot;
     const maxSafeRiskPct = (maxSafeRiskUSD / balance) * 100;
 
     state.maxSafeRiskPct = maxSafeRiskPct;
@@ -646,7 +650,8 @@ function calculate() {
         requiredMargin, marginUsagePct, freeMarginAfterTrade,
         maxSafeLots, maxSafeRiskPct, maxSafeRiskUSD,
         activeRewardUSD, floorRewardUSD, roundRewardUSD, exactRewardUSD, rrRatio, tpPips,
-        inst, conversionRateVal, leverage, balance, contractSize
+        inst, conversionRateVal, leverage, balance, contractSize,
+        riskPerLot, spreadPips, commissionLot
     });
 
     updateFormula({
@@ -655,7 +660,8 @@ function calculate() {
         pipValueUSD, slPips, totalPositionValueUSD,
         requiredMargin, marginUsagePct, maxSafeLots, maxSafeRiskPct,
         activeRewardUSD, rrRatio, tpPips,
-        inst, conversionRateVal, leverage, balance, contractSize
+        inst, conversionRateVal, leverage, balance, contractSize,
+        riskPerLot, spreadPips, commissionLot
     });
 }
 
@@ -825,35 +831,44 @@ function updateFormula(data) {
         pipValueUSD, slPips, totalPositionValueUSD,
         requiredMargin, marginUsagePct, maxSafeLots, maxSafeRiskPct,
         activeRewardUSD, rrRatio, tpPips,
-        inst, conversionRateVal, leverage, balance, contractSize
+        inst, conversionRateVal, leverage, balance, contractSize,
+        riskPerLot, spreadPips, commissionLot
     } = data;
 
     const pipLabel = getPipLabel(inst);
     let lines = [];
 
-    lines.push(`── 1. CONTRACT SPECIFICATIONS & PIP VALUE ──`);
+    lines.push(`• 1. CONTRACT SPECIFICATIONS & PIP VALUE •`);
     lines.push(`Symbol: ${inst.label} (Contract Size = ${formatNumber(contractSize, contractSize % 1 === 0 ? 0 : 2)})`);
-    lines.push(`Tick Value = ${inst.pipSize} × ${contractSize} = ${formatUSD(pipValueUSD)} per ${pipLabel === 'points' ? 'point' : 'pip'} per 1.00 lot`);
+    lines.push(`Tick Value = ${inst.pipSize} x ${contractSize} = ${formatUSD(pipValueUSD)} per ${pipLabel === 'points' ? 'point' : 'pip'} per 1.00 lot`);
     lines.push(``);
 
-    lines.push(`── 2. LOT SIZING (TARGET RISK: ${formatUSD(riskAmount)}) ──`);
-    lines.push(`Risk Per Lot    = ${formatNumber(slPips, slPips % 1 === 0 ? 0 : 1)} ${pipLabel} × ${formatUSD(pipValueUSD)} = ${formatUSD(slPips * pipValueUSD)}`);
-    lines.push(`Exact Size      = ${formatUSD(riskAmount)} ÷ ${formatUSD(slPips * pipValueUSD)} = ${exactLotSize.toFixed(5)} lots`);
+    lines.push(`• 2. LOT SIZING (TARGET RISK: ${formatUSD(riskAmount)}) •`);
+    
+    if (spreadPips > 0 || commissionLot > 0) {
+        lines.push(`Raw SL Risk     = ${formatNumber(slPips, slPips % 1 === 0 ? 0 : 1)} ${pipLabel} x ${formatUSD(pipValueUSD)} = ${formatUSD(slPips * pipValueUSD)}`);
+        lines.push(`Phantom Costs   = Spread (${spreadPips}) + Comm (${formatUSD(commissionLot)}) = ${formatUSD((spreadPips * pipValueUSD) + commissionLot)}`);
+        lines.push(`Risk Per Lot    = ${formatUSD(riskPerLot)} (Adjusted)`);
+    } else {
+        lines.push(`Risk Per Lot    = ${formatNumber(slPips, slPips % 1 === 0 ? 0 : 1)} ${pipLabel} x ${formatUSD(pipValueUSD)} = ${formatUSD(riskPerLot)}`);
+    }
+    
+    lines.push(`Exact Size      = ${formatUSD(riskAmount)} ÷ ${formatUSD(riskPerLot)} = ${exactLotSize.toFixed(5)} lots`);
     lines.push(``);
-    lines.push(`🛡️ Conservative = ${floorLotSize.toFixed(2)} lots → Actual Risk: ${formatUSD(floorRiskUSD)} (${((floorRiskUSD / balance) * 100).toFixed(2)}%) [Safe for Prop Firms]`);
+    lines.push(`↓ Conservative = ${floorLotSize.toFixed(2)} lots → Actual Risk: ${formatUSD(floorRiskUSD)} (${((floorRiskUSD / balance) * 100).toFixed(2)}%) [Safe for Prop Firms]`);
     lines.push(`Nearest (Round) = ${roundLotSize.toFixed(2)} lots → Actual Risk: ${formatUSD(roundRiskUSD)} (${((roundRiskUSD / balance) * 100).toFixed(2)}%)`);
     lines.push(`Selected Volume = ${activeLotSize.toFixed(2)} lots (Active Risk: ${formatUSD(activeRiskUSD)})`);
 
     lines.push(``);
-    lines.push(`── 3. MT5 MARGIN & EXECUTION CHECK ──`);
-    lines.push(`Notional Value  = ${activeLotSize.toFixed(2)} lots × Contract Specs = ${formatUSD(totalPositionValueUSD)}`);
+    lines.push(`• 3. MT5 MARGIN & EXECUTION CHECK •`);
+    lines.push(`Notional Value  = ${activeLotSize.toFixed(2)} lots x Contract Specs = ${formatUSD(totalPositionValueUSD)}`);
     lines.push(`Required Margin = ${formatUSD(totalPositionValueUSD)} ÷ ${leverage} = ${formatUSD(requiredMargin)}`);
     lines.push(`Account Balance = ${formatUSD(balance)}`);
-    lines.push(`Margin Usage    = (${formatUSD(requiredMargin)} ÷ ${formatUSD(balance)}) × 100 = ${marginUsagePct.toFixed(1)}%`);
+    lines.push(`Margin Usage    = (${formatUSD(requiredMargin)} ÷ ${formatUSD(balance)}) x 100 = ${marginUsagePct.toFixed(1)}%`);
 
     if (requiredMargin > balance) {
         lines.push(`Status          = ❌ REJECTED ("No Money")`);
-        lines.push(`Max Safe Lots   = (${formatUSD(balance)} × ${leverage}) ÷ Notional/Lot = ${maxSafeLots.toFixed(2)} lots`);
+        lines.push(`Max Safe Lots   = (${formatUSD(balance)} x ${leverage}) ÷ Notional/Lot = ${maxSafeLots.toFixed(2)} lots`);
         lines.push(`Max Safe Risk % = ${maxSafeRiskPct.toFixed(2)}%`);
     } else {
         lines.push(`Status          = ✅ EXECUTABLE (Free Margin Remaining: ${formatUSD(balance - requiredMargin)})`);
@@ -1249,7 +1264,8 @@ const calcInputs = [
     DOM.balance, DOM.contractSize, DOM.riskPercent, DOM.riskDollar,
     DOM.entryPrice, DOM.slPrice, DOM.tpPrice,
     DOM.slPips, DOM.tpPips, DOM.pipsModePrice,
-    DOM.conversionRate
+    DOM.conversionRate,
+    document.getElementById('spreadPips'), document.getElementById('commissionLot')
 ];
 
 calcInputs.forEach(input => {
@@ -1325,3 +1341,223 @@ function init() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// ========================================
+// FIREBASE CLOUD SYNC & TRADE LOGGING
+// ========================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDAOHg2cYFzHiBSNEw8IWhkBZD2A2v7F-o",
+  authDomain: "forex-calculator-bd2f8.firebaseapp.com",
+  projectId: "forex-calculator-bd2f8",
+  storageBucket: "forex-calculator-bd2f8.firebasestorage.app",
+  messagingSenderId: "1036573574708",
+  appId: "1:1036573574708:web:c4cff525a8dec486906c61",
+  measurementId: "G-R9ZZFJERTV"
+};
+
+let db = null;
+try {
+  if (typeof firebase !== "undefined") {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    console.log("Firebase initialized successfully");
+  }
+} catch (e) {
+  console.error("Firebase init failed:", e);
+}
+
+let traderId = localStorage.getItem("traderId") || "OYAREWEALTH";
+const displayTraderId = document.getElementById("displayTraderId");
+if (displayTraderId) displayTraderId.textContent = traderId;
+
+document.getElementById("btnEditTrader")?.addEventListener("click", () => {
+  const newId = prompt("Enter your Trader ID to sync across devices:", traderId);
+  if (newId && newId.trim() !== "") {
+    traderId = newId.trim().toUpperCase();
+    localStorage.setItem("traderId", traderId);
+    if (displayTraderId) displayTraderId.textContent = traderId;
+    listenToTrades();
+  }
+});
+
+function showToast(message, type = "success") {
+  const toast = document.getElementById("logToast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.className = "log-toast show " + type;
+  setTimeout(() => {
+    toast.className = "log-toast hidden";
+  }, 3000);
+}
+
+function formatTimeAgo(date) {
+  const seconds = Math.floor((new Date() - date) / 1000);
+  if (seconds < 60) return "Just now";
+  const m = Math.floor(seconds / 60);
+  if (m < 60) return m + "m ago";
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + "h ago";
+  const d = Math.floor(h / 24);
+  return d + "d ago";
+}
+
+document.getElementById("btnLogTrade")?.addEventListener("click", () => {
+  if (!db) {
+    showToast("Cloud sync unavailable", "error");
+    return;
+  }
+
+  const lotSize = parseFloat(document.getElementById("lotSize").textContent);
+  if (isNaN(lotSize) || lotSize <= 0) {
+    showToast("Calculate a valid lot size first!", "error");
+    return;
+  }
+
+  const tradeData = {
+    instrument: document.getElementById("instrument").value,
+    balance: parseFloat(document.getElementById("balance").value),
+    riskPercent: parseFloat(document.getElementById("riskPercent").value),
+    riskDollar: parseFloat(document.getElementById("riskDollar").value),
+    riskMode: state.riskMode,
+    slMode: state.slMode,
+    entryPrice: document.getElementById("entryPrice").value,
+    slPrice: document.getElementById("slPrice").value,
+    tpPrice: document.getElementById("tpPrice").value,
+    slPips: document.getElementById("slPips").value,
+    tpPips: document.getElementById("tpPips").value,
+    spreadPips: document.getElementById("spreadPips") ? document.getElementById("spreadPips").value : 0,
+    commissionLot: document.getElementById("commissionLot") ? document.getElementById("commissionLot").value : 0,
+    lotSize: lotSize,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  db.collection("traders").doc(traderId).collection("trades").add(tradeData)
+    .then(() => {
+      showToast("Trade synced to cloud! ☁️");
+    })
+    .catch(err => {
+      console.error(err);
+      showToast("Error syncing trade", "error");
+    });
+});
+
+let unsubscribeTrades = null;
+
+function listenToTrades() {
+  if (!db) return;
+  if (unsubscribeTrades) unsubscribeTrades();
+
+  const listEl = document.getElementById("tradeLogList");
+  if (!listEl) return;
+  listEl.innerHTML = "<div style=\"padding:20px;text-align:center;color:var(--text-muted)\">Syncing with cloud...</div>";
+
+  unsubscribeTrades = db.collection("traders").doc(traderId).collection("trades")
+    .orderBy("timestamp", "desc")
+    .limit(20)
+    .onSnapshot(snapshot => {
+      listEl.innerHTML = "";
+      if (snapshot.empty) {
+        listEl.innerHTML = "<div class=\"empty-log\">No trades logged yet. Click \"Log / Save This Trade\" above.</div>";
+        return;
+      }
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const timeStr = data.timestamp ? formatTimeAgo(data.timestamp.toDate()) : "Just now";
+        const card = document.createElement("div");
+        card.className = "trade-card";
+
+        const riskLabel = data.riskMode === "percent" ? (data.riskPercent + "%") : ("$" + data.riskDollar);
+        card.innerHTML = 
+          "<div class=\"trade-card-header\">" +
+            "<span class=\"trade-card-inst\">" + data.instrument + "</span>" +
+            "<span class=\"trade-card-time\">" + timeStr + "</span>" +
+          "</div>" +
+          "<div class=\"trade-card-body\">" +
+            "<div class=\"trade-card-stat\">" +
+              "<span class=\"stat-label\">Lots</span>" +
+              "<span class=\"stat-value\">" + data.lotSize + "</span>" +
+            "</div>" +
+            "<div class=\"trade-card-stat\">" +
+              "<span class=\"stat-label\">Risk</span>" +
+              "<span class=\"stat-value\">" + riskLabel + "</span>" +
+            "</div>" +
+          "</div>" +
+          "<button class=\"btn-load-trade\">Load Setup</button>" +
+          "<button class=\"btn-del-trade\" data-id=\"" + doc.id + "\">✕</button>";
+
+        card.querySelector(".btn-load-trade").addEventListener("click", () => {
+          loadTradeIntoCalculator(data);
+        });
+
+        card.querySelector(".btn-del-trade").addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (confirm("Delete this trade log?")) {
+            db.collection("traders").doc(traderId).collection("trades").doc(doc.id).delete();
+          }
+        });
+
+        listEl.appendChild(card);
+      });
+
+      const statusText = document.getElementById("cloudStatusText");
+      const statusBadge = document.getElementById("cloudStatusBadge");
+      if (statusText) statusText.textContent = "Cloud Synced";
+      if (statusBadge) statusBadge.classList.replace("status-error", "status-connected");
+    }, err => {
+      console.error("Firestore listen error", err);
+      const statusText = document.getElementById("cloudStatusText");
+      const statusBadge = document.getElementById("cloudStatusBadge");
+      if (statusText) statusText.textContent = "Sync Error";
+      if (statusBadge) statusBadge.classList.replace("status-connected", "status-error");
+    });
+}
+
+function loadTradeIntoCalculator(data) {
+  document.getElementById("instrument").value = data.instrument;
+  document.getElementById("balance").value = data.balance;
+  if (document.getElementById("spreadPips")) document.getElementById("spreadPips").value = data.spreadPips || "";
+  if (document.getElementById("commissionLot")) document.getElementById("commissionLot").value = data.commissionLot || "";
+
+  if (data.riskMode === "percent") {
+    document.getElementById("riskPercentBtn").click();
+    document.getElementById("riskPercent").value = data.riskPercent;
+  } else {
+    document.getElementById("riskDollarBtn").click();
+    document.getElementById("riskDollar").value = data.riskDollar;
+  }
+
+  if (data.slMode === "price") {
+    document.getElementById("slPriceBtn").click();
+    document.getElementById("entryPrice").value = data.entryPrice || "";
+    document.getElementById("slPrice").value = data.slPrice || "";
+    document.getElementById("tpPrice").value = data.tpPrice || "";
+  } else {
+    document.getElementById("slPipsBtn").click();
+    document.getElementById("slPips").value = data.slPips || "";
+    document.getElementById("tpPips").value = data.tpPips || "";
+  }
+
+  showToast("Trade loaded into calculator");
+  updateContractSizeForInstrument();
+  updateLeverageForInstrument();
+  updateConversionField();
+  updateInfoBar();
+  updateInstrumentBadge();
+  calculate();
+}
+
+document.getElementById("btnClearLogs")?.addEventListener("click", async () => {
+  if (!db) return;
+  if (confirm("Clear ALL trade logs? This cannot be undone.")) {
+    const snapshot = await db.collection("traders").doc(traderId).collection("trades").get();
+    const batch = db.batch();
+    snapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+    showToast("All logs cleared");
+  }
+});
+
+setTimeout(listenToTrades, 500);

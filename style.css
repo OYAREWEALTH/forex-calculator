@@ -1306,6 +1306,449 @@ input[type="number"] {
     }
 }
 
+/* ===== TRADE LOG ACTION BUTTON ===== */
+.log-action-wrapper {
+    margin-top: 14px;
+    margin-bottom: 14px;
+}
+
+.btn-log-trade {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 13px 18px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.15));
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: var(--radius-md);
+    color: #34d399;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s var(--ease-out);
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.1);
+}
+
+.btn-log-trade:hover {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(6, 182, 212, 0.25));
+    border-color: rgba(16, 185, 129, 0.7);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.22);
+    color: #fff;
+}
+
+.btn-log-trade:active {
+    transform: translateY(0);
+}
+
+.btn-log-trade .btn-icon {
+    font-size: 1.1rem;
+}
+
+.btn-cloud-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: rgba(16, 185, 129, 0.18);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 2px 8px;
+    border-radius: 20px;
+    color: #6ee7b7;
+    margin-left: auto;
+}
+
+/* ===== TRADE LOG PANEL ===== */
+.trade-log-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    backdrop-filter: blur(12px);
+    padding: 24px;
+    margin-top: 24px;
+    margin-bottom: 24px;
+    transition: border-color 0.3s ease;
+}
+
+.trade-log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 20px;
+}
+
+.log-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.log-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.log-title-row h2 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.log-sub {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 3px 0 0;
+}
+
+.cloud-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #34d399;
+}
+
+.cloud-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: pulseGlow 2s infinite ease-in-out;
+}
+
+.cloud-status-badge.status-offline {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: #fbbf24;
+}
+
+.cloud-status-badge.status-offline .cloud-dot {
+    background: #f59e0b;
+    box-shadow: 0 0 8px #f59e0b;
+}
+
+.log-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.trader-id-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+}
+
+.trader-label {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.trader-id {
+    color: #38bdf8;
+    font-weight: 700;
+    font-family: var(--font-mono);
+}
+
+.btn-edit-trader {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.btn-edit-trader:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-action-small {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #f87171;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-action-small:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fff;
+}
+
+/* Toast */
+.log-toast {
+    padding: 10px 16px;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.15));
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: var(--radius-sm);
+    color: #6ee7b7;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: fadeIn 0.3s ease;
+}
+
+/* Empty state */
+.empty-log-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.empty-log-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    opacity: 0.7;
+}
+
+.empty-log-state h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.empty-log-state p {
+    font-size: 0.82rem;
+    max-width: 420px;
+    margin: 0 auto;
+    line-height: 1.5;
+}
+
+/* Trade Log Cards Grid */
+.trade-log-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+}
+
+.trade-log-card {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.25s var(--ease-out);
+    position: relative;
+    overflow: hidden;
+}
+
+.trade-log-card:hover {
+    border-color: rgba(16, 185, 129, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    background: rgba(15, 23, 42, 0.8);
+}
+
+.trade-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.card-symbol-block {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.card-symbol {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+
+.card-direction {
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+}
+
+.card-direction.buy {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.card-direction.sell {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.card-time {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.card-hero-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.card-lots-highlight {
+    font-size: 1.6rem;
+    font-weight: 900;
+    font-family: var(--font-mono);
+    color: var(--accent-green);
+}
+
+.card-lots-unit {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-left: 4px;
+    text-transform: uppercase;
+}
+
+.card-exec-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+}
+
+.card-exec-badge.safe {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.card-exec-badge.warning {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.card-exec-badge.rejected {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.card-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    font-size: 0.78rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    margin-bottom: 12px;
+}
+
+.card-metric-label {
+    color: var(--text-muted);
+    display: block;
+    font-size: 0.7rem;
+}
+
+.card-metric-val {
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+}
+
+.card-metric-val.risk {
+    color: #f87171;
+}
+
+.card-metric-val.reward {
+    color: #34d399;
+}
+
+.card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-load-trade {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #34d399;
+    padding: 7px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-load-trade:hover {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: rgba(16, 185, 129, 0.6);
+    color: #fff;
+}
+
+.btn-delete-card {
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.18);
+    color: #f87171;
+    padding: 7px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-delete-card:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fff;
+}
+
+/* Flash animation on loaded inputs */
+@keyframes inputFlashGlow {
+    0% { box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.8); background: rgba(16, 185, 129, 0.15); }
+    100% { box-shadow: none; }
+}
+
+.input-flash {
+    animation: inputFlashGlow 1.2s ease-out;
+}
+
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar {
     width: 6px;
@@ -1328,4 +1771,17 @@ input[type="number"] {
 ::selection {
     background: rgba(16, 185, 129, 0.25);
     color: var(--text-primary);
+}
+/* Phantom Costs */
+.costs-group {
+    margin-top: 15px; 
+    padding-top: 15px; 
+    border-top: 1px solid var(--border);
+}
+.costs-group .addon-prefix-label {
+    min-width: 65px;
+    font-size: 0.8rem;
+}
+.costs-group input {
+    font-size: 0.95rem;
 }

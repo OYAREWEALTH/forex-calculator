@@ -9,6 +9,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <!-- Google Cloud Firebase SDK (Realtime Cross-Device Sync) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -270,7 +273,26 @@
                             <div class="input-addon">
                                 <input type="number" id="conversionRate" placeholder="163.73" step="any">
                             </div>
-                            <span class="helper-text" id="conversionHelper">Needed to convert pip value to USD</span>
+                        </div>
+
+                        <!-- Phantom Costs (Spread & Commission) -->
+                        <div class="input-group costs-group" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                            <label style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>Trading Costs <span style="font-weight: 400; color: var(--text-muted);">(Phantom Math)</span></span>
+                            </label>
+                            <div class="price-inputs">
+                                <div class="input-addon" title="Current Spread in pips (e.g. 1.0)">
+                                    <span class="addon-prefix-label" style="min-width: 60px;">Spread</span>
+                                    <input type="number" id="spreadPips" placeholder="1.0" min="0" step="0.1" value="0">
+                                </div>
+                                <div class="input-addon" title="Round-trip commission per lot in $">
+                                    <span class="addon-prefix-label" style="min-width: 60px;">Comm.</span>
+                                    <input type="number" id="commissionLot" placeholder="6.00" min="0" step="0.5" value="0">
+                                    <span class="addon-suffix">$/lot</span>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="helper-text" id="conversionHelper">Needed to convert pip value to USD</span>
                         </div>
                     </div>
                 </div>
@@ -324,6 +346,15 @@
                                     <path d="M3 11V3C3 2.44772 3.44772 2 4 2H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                                 </svg>
                                 <span class="copy-tooltip" id="copyTooltip">Copied!</span>
+                            </button>
+                        </div>
+
+                        <!-- Trade Log Action Button -->
+                        <div class="log-action-wrapper">
+                            <button class="btn-log-trade" id="btnLogTrade" title="Log and sync this trade to Google Cloud">
+                                <span class="btn-icon">📝</span>
+                                <span class="btn-text">Log / Save This Trade</span>
+                                <span class="btn-cloud-badge">☁️ Cloud Sync</span>
                             </button>
                         </div>
 
@@ -415,12 +446,12 @@
                                 <span class="result-label">Required Margin</span>
                                 <span class="result-value" id="marginResult">$0.00</span>
                             </div>
-                            <div class="result-card">
+                                    <div class="result-card">
                                 <span class="result-label">Margin Usage</span>
                                 <span class="result-value" id="marginUsageResult">0%</span>
                             </div>
                             <div class="result-card">
-                                <span class="result-label">Max Safe Lot</span>
+                                <span class="result-label" title="Maximum volume your balance can hold at active leverage before MT5 rejects with 'Not Enough Money'">Max Margin Capacity</span>
                                 <span class="result-value" id="maxSafeLotsResult">—</span>
                             </div>
                         </div>
@@ -456,6 +487,40 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ====== TRADE RECORD LOG & CLOUD JOURNAL ====== -->
+            <section class="trade-log-panel" id="tradeLogPanel">
+                <div class="trade-log-header">
+                    <div class="log-header-left">
+                        <span class="panel-icon">☁️</span>
+                        <div>
+                            <div class="log-title-row">
+                                <h2>Trade Journal &amp; Cloud Log</h2>
+                                <span class="cloud-status-badge status-connected" id="cloudStatusBadge">
+                                    <span class="cloud-dot"></span> <span id="cloudStatusText">Google Cloud Live</span>
+                                </span>
+                            </div>
+                            <p class="log-sub">Real-time sync across your phone &amp; PC &bull; Click any trade to load its setup</p>
+                        </div>
+                    </div>
+                    <div class="log-header-right">
+                        <div class="trader-id-badge" id="traderIdBadge" title="Syncs across all your devices using this Trader ID">
+                            <span class="trader-label">Trader ID:</span>
+                            <span class="trader-id" id="displayTraderId">OYAREWEALTH</span>
+                            <button class="btn-edit-trader" id="btnEditTrader" title="Change Trader ID / Sync Code">✏️</button>
+                        </div>
+                        <button class="btn-action-small" id="btnClearLogs" title="Clear all saved trades">🗑️ Clear All</button>
+                    </div>
+                </div>
+
+                <!-- Toast feedback notification -->
+                <div class="log-toast hidden" id="logToast"></div>
+
+                <!-- Trade Log List Container -->
+                <div class="trade-log-list" id="tradeLogList">
+                    <!-- Populated dynamically by script.js -->
+                </div>
+            </section>
 
             <!-- ====== INSTRUMENT INFO BAR ====== -->
             <div class="info-bar">
