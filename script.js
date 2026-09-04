@@ -665,7 +665,7 @@ function calculate() {
         roundRewardUSD = Math.max(0, roundLotSize * rewardPerLot);
         exactRewardUSD = Math.max(0, exactLotSize * rewardPerLot);
         activeRewardUSD = Math.max(0, activeLotSize * rewardPerLot);
-        rrRatio = activeRiskUSD > 0 ? activeRewardUSD / activeRiskUSD : 0;
+        rrRatio = slPips > 0 ? tpPips / slPips : 0; // Pure chart setup ratio
     }
 
     // 8. Calculate Position Value & Required Margin (MT5 Check)
